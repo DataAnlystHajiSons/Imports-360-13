@@ -496,6 +496,8 @@
                         field.name === 'notes' ||
                         field.name === 'verification_notes' ||
                         field.name === 'freight_quote_response_id' ||
+                        field.name === 'amendment_da_amount' ||
+                        field.name === 'amendment_da_date' ||
                         field.name.includes('url')
                     ) return;
                     totalFields++;
@@ -904,6 +906,8 @@
                         field.name === 'notes' ||
                         field.name === 'verification_notes' ||
                         field.name === 'freight_quote_response_id' ||
+                        field.name === 'amendment_da_amount' ||
+                        field.name === 'amendment_da_date' ||
                         field.name.includes('url')
                     ) return;
                     
