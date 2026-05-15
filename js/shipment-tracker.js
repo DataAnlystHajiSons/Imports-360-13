@@ -60,8 +60,10 @@
             table: "bank_debit_advice",
             fields: [
                 { name: "is_received", type: "boolean", label: "Is Received" },
-                { name: "received_at", type: "datetime-local", label: "Received At", readonly: true },
-                { name: "received_by", type: "uuid", label: "Received By", fk: { relation: "app_user", displayColumn: "full_name" }, readonly: true }
+                { name: "opening_da_amount", type: "number", label: "LC/BC Opening DA Amount" },
+                { name: "opening_da_date", type: "date", label: "LC/BC Opening DA Received Date" },
+                { name: "amendment_da_amount", type: "number", label: "LC/BC Amendment DA Amount" },
+                { name: "amendment_da_date", type: "date", label: "LC/BC Amendment DA Received Date" }
             ]
         },
         "good_declaration": {
