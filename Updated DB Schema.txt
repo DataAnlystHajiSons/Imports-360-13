@@ -1,0 +1,1154 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.agency_charges (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clearing_agent_bill_id uuid UNIQUE,
+  ca_vendor_id uuid,
+  weboc_token_value numeric,
+  weboc_token_accessed_perc numeric,
+  transport_charges_value numeric,
+  transport_charges_accessed_perc numeric,
+  godown_value numeric,
+  godown_accessed_perc numeric,
+  unreceipted_services_charges_value numeric,
+  unreceipted_services_charges_accessed_perc numeric,
+  taxable_service_charges_value numeric,
+  taxable_service_charges_accessed_perc numeric,
+  sales_tax_value numeric,
+  sales_tax_accessed_perc numeric,
+  sub_total_services_charges_value numeric,
+  sub_total_services_charges_accessed_perc numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT agency_charges_pkey PRIMARY KEY (id),
+  CONSTRAINT agency_charges_ca_vendor_id_fkey FOREIGN KEY (ca_vendor_id) REFERENCES public.ca_vendors(id),
+  CONSTRAINT agency_charges_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT agency_charges_clearing_agent_bill_id_fkey FOREIGN KEY (clearing_agent_bill_id) REFERENCES public.clearing_agent_bill(id)
+);
+CREATE TABLE public.alert_emails_list (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  emails text,
+  added_at timestamp with time zone DEFAULT now(),
+  added_by uuid
+);
+CREATE TABLE public.amendment (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  bank_charges_id uuid NOT NULL UNIQUE,
+  shipment_id uuid NOT NULL,
+  amendment_charges_amount numeric,
+  amendment_charges_per numeric,
+  fed_amount numeric,
+  fed_per numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT amendment_pkey PRIMARY KEY (id),
+  CONSTRAINT amendment_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT amendment_bank_charges_id_fkey FOREIGN KEY (bank_charges_id) REFERENCES public.bank_charges(id)
+);
+CREATE TABLE public.app_user (
+  id uuid NOT NULL DEFAULT auth.uid(),
+  email text NOT NULL UNIQUE,
+  full_name text NOT NULL,
+  role USER-DEFINED NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT app_user_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.audit_log (
+  id bigint NOT NULL DEFAULT nextval('audit_log_id_seq'::regclass),
+  shipment_id uuid,
+  actor_id uuid,
+  action text NOT NULL,
+  from_stage USER-DEFINED,
+  to_stage USER-DEFINED,
+  at timestamp with time zone DEFAULT now(),
+  meta jsonb,
+  CONSTRAINT audit_log_pkey PRIMARY KEY (id),
+  CONSTRAINT audit_log_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.app_user(id),
+  CONSTRAINT audit_log_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.availability_confirmation (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  supplier_id uuid,
+  available boolean NOT NULL,
+  notes text,
+  confirmed_at timestamp with time zone DEFAULT now(),
+  confirmed_by uuid,
+  CONSTRAINT availability_confirmation_pkey PRIMARY KEY (id),
+  CONSTRAINT availability_confirmation_confirmed_by_fkey FOREIGN KEY (confirmed_by) REFERENCES public.app_user(id),
+  CONSTRAINT availability_confirmation_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.supplier(id),
+  CONSTRAINT availability_confirmation_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.bank (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  branch_name text,
+  branch_address text,
+  swift_code text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT bank_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.bank_charge_documents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  bank_charges_id uuid NOT NULL,
+  file_url text NOT NULL,
+  file_name text,
+  doc_category text,
+  uploaded_by uuid,
+  uploaded_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT bank_charge_documents_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_charge_documents_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.app_user(id),
+  CONSTRAINT bank_charge_documents_bank_charges_id_fkey FOREIGN KEY (bank_charges_id) REFERENCES public.bank_charges(id)
+);
+CREATE TABLE public.bank_charges (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL UNIQUE,
+  usd_amount numeric,
+  rate numeric,
+  rs numeric,
+  lc_issuance_date date,
+  created_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT bank_charges_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_charges_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT bank_charges_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.bank_communication (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL,
+  bank_id uuid NOT NULL,
+  bank_contact_id uuid,
+  sent_by uuid NOT NULL,
+  sent_at timestamp with time zone DEFAULT now(),
+  email_subject text,
+  email_body text,
+  status text,
+  cc_emails ARRAY,
+  CONSTRAINT bank_communication_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_communication_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT bank_communication_bank_id_fkey FOREIGN KEY (bank_id) REFERENCES public.bank(id),
+  CONSTRAINT bank_communication_bank_contact_id_fkey FOREIGN KEY (bank_contact_id) REFERENCES public.bank_contact(id),
+  CONSTRAINT bank_communication_sent_by_fkey FOREIGN KEY (sent_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.bank_communication_documents (
+  communication_id uuid NOT NULL,
+  document_id uuid NOT NULL,
+  CONSTRAINT bank_communication_documents_pkey PRIMARY KEY (communication_id, document_id),
+  CONSTRAINT bank_communication_documents_communication_id_fkey FOREIGN KEY (communication_id) REFERENCES public.bank_communication(id),
+  CONSTRAINT bank_communication_documents_document_id_fkey FOREIGN KEY (document_id) REFERENCES public.document(id)
+);
+CREATE TABLE public.bank_contact (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  bank_id uuid NOT NULL,
+  contact_name text,
+  contact_email text NOT NULL,
+  contact_phone text,
+  department text,
+  is_primary boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT bank_contact_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_contact_bank_id_fkey FOREIGN KEY (bank_id) REFERENCES public.bank(id)
+);
+CREATE TABLE public.bank_endorsement (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  original_docs_id uuid,
+  endorsed boolean NOT NULL,
+  endorsed_at timestamp with time zone DEFAULT now(),
+  updated_by uuid,
+  CONSTRAINT bank_endorsement_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_endorsement_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id),
+  CONSTRAINT bank_endorsement_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT bank_endorsement_original_docs_id_fkey FOREIGN KEY (original_docs_id) REFERENCES public.original_docs(id)
+);
+CREATE TABLE public.bility (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL UNIQUE,
+  cargo_name text,
+  bility_number_as_per_hs numeric,
+  bility_number_as_per_cargo numeric,
+  delivery_route_as_per_hs text,
+  delivery_route_as_per_cargo text,
+  no_of_cartoons_as_per_hs numeric,
+  no_of_cartoons_as_per_cargo numeric,
+  weight_as_per_hs numeric,
+  weight_as_per_cargo numeric,
+  rate_per_kg_as_per_hs numeric,
+  rate_per_kg_as_per_cargo numeric,
+  total_freight_as_per_hs numeric,
+  total_freight_as_per_cargo numeric,
+  local_labor_as_per_hs numeric,
+  local_labor_as_per_cargo numeric,
+  basic_total_as_per_hs numeric,
+  basic_total_as_per_cargo numeric,
+  destination_labor_as_per_hs numeric,
+  destination_labor_as_per_cargo numeric,
+  destination_to_farm_as_per_hs numeric,
+  destination_to_farm_as_per_cargo numeric,
+  total_as_per_hs numeric,
+  total_as_per_cargo numeric,
+  tax_perc_as_per_hs numeric,
+  tax_perc_as_per_cargo numeric,
+  net_payable_amount_as_per_hs numeric,
+  net_payable_amount_as_per_cargo numeric,
+  rate_per_ctn_as_per_hs numeric,
+  rate_per_ctn_as_per_cargo numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT bility_pkey PRIMARY KEY (id),
+  CONSTRAINT bility_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT bility_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.bills (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  forwarder_date date,
+  clearing_agent_date date,
+  transporter_date date,
+  costing numeric,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by uuid,
+  CONSTRAINT bills_pkey PRIMARY KEY (id),
+  CONSTRAINT bills_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id),
+  CONSTRAINT bills_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.ca_vendors (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  vendor_name text,
+  contact_number text,
+  email text,
+  address text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT ca_vendors_pkey PRIMARY KEY (id),
+  CONSTRAINT ca_vendors_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.charges (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  freight_forwarder_bill_id uuid,
+  type text CHECK (type = ANY (ARRAY['freight_and_exw_charges'::text, 'local_charges'::text, 'deduction'::text])),
+  name text,
+  description text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT charges_pkey PRIMARY KEY (id),
+  CONSTRAINT charges_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT charges_freight_forwarder_bill_id_fkey FOREIGN KEY (freight_forwarder_bill_id) REFERENCES public.freight_forwarder_bill(id)
+);
+CREATE TABLE public.clearing_agent (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  company_name text,
+  contact_email text,
+  contact_phone text,
+  CONSTRAINT clearing_agent_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.clearing_agent_bill (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL UNIQUE,
+  bill_no numeric,
+  invoice_no text,
+  total_clearing_agent_value numeric,
+  total_clearing_agent_accessed_perc numeric,
+  total_expense_shipment_value numeric,
+  total_expense_shipment_accessed_perc numeric,
+  total_bill numeric,
+  duties numeric,
+  excise numeric,
+  advance_payments numeric,
+  deduction numeric,
+  net_payable numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  CONSTRAINT clearing_agent_bill_pkey PRIMARY KEY (id),
+  CONSTRAINT clearing_agent_bill_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT clearing_agent_bill_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT clearing_agent_bill_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.clearing_agent_communication (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL,
+  clearing_agent_id uuid NOT NULL,
+  sent_by uuid NOT NULL,
+  sent_at timestamp with time zone DEFAULT now(),
+  email_subject text,
+  email_body text,
+  cc_emails ARRAY,
+  status text,
+  CONSTRAINT clearing_agent_communication_pkey PRIMARY KEY (id),
+  CONSTRAINT clearing_agent_communication_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT clearing_agent_communication_clearing_agent_id_fkey FOREIGN KEY (clearing_agent_id) REFERENCES public.clearing_agent(id),
+  CONSTRAINT clearing_agent_communication_sent_by_fkey FOREIGN KEY (sent_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.clearing_agent_communication_documents (
+  communication_id uuid NOT NULL,
+  document_id uuid NOT NULL,
+  CONSTRAINT clearing_agent_communication_documents_pkey PRIMARY KEY (communication_id, document_id),
+  CONSTRAINT clearing_agent_comm_docs_communication_id_fkey FOREIGN KEY (communication_id) REFERENCES public.clearing_agent_communication(id),
+  CONSTRAINT clearing_agent_comm_docs_document_id_fkey FOREIGN KEY (document_id) REFERENCES public.document(id)
+);
+CREATE TABLE public.commercial_invoice (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  invoice_number text NOT NULL,
+  invoice_date date NOT NULL,
+  file_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  CONSTRAINT commercial_invoice_pkey PRIMARY KEY (id),
+  CONSTRAINT commercial_invoice_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT commercial_invoice_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT commercial_invoice_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.commodity (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  CONSTRAINT commodity_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.contact_person (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  supplier_id uuid,
+  name text,
+  designation text,
+  department text,
+  CONSTRAINT contact_person_pkey PRIMARY KEY (id),
+  CONSTRAINT contact_person_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.supplier(id)
+);
+CREATE TABLE public.costing (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL UNIQUE,
+  final_payment numeric,
+  invoice_charges numeric,
+  exchange_rate numeric,
+  ip_charges numeric,
+  bank_contract_opening_charges numeric,
+  shipping_guarantee numeric,
+  fbr_duty numeric,
+  forwarder_charges numeric,
+  clearing_charges numeric,
+  local_transporter numeric,
+  port_charges numeric,
+  final_payment_charges numeric,
+  total numeric,
+  total_cost numeric,
+  oh_perc numeric,
+  qty numeric,
+  per_unit_rate numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by uuid,
+  CONSTRAINT costing_pkey PRIMARY KEY (id),
+  CONSTRAINT costing_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT costing_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT costing_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.deductions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clearing_agent_bill_id uuid UNIQUE,
+  ca_vendor_id uuid,
+  wht_value numeric,
+  wht_rate numeric,
+  g_agent_other numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT deductions_pkey PRIMARY KEY (id),
+  CONSTRAINT deductions_ca_vendor_id_fkey FOREIGN KEY (ca_vendor_id) REFERENCES public.ca_vendors(id),
+  CONSTRAINT deductions_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT deductions_clearing_agent_bill_id_fkey FOREIGN KEY (clearing_agent_bill_id) REFERENCES public.clearing_agent_bill(id)
+);
+CREATE TABLE public.docs_to_clearing_agent (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  clearing_agent_id uuid,
+  name text NOT NULL,
+  shipping_company text,
+  tracking_number text,
+  sended_at date,
+  expected_arrival_date date,
+  slip_picture_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  CONSTRAINT docs_to_clearing_agent_pkey PRIMARY KEY (id),
+  CONSTRAINT docs_to_clearing_agent_clearing_agent_id_fkey FOREIGN KEY (clearing_agent_id) REFERENCES public.clearing_agent(id),
+  CONSTRAINT docs_to_clearing_agent_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT docs_to_clearing_agent_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT docs_to_clearing_agent_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.document (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid,
+  doc_type text NOT NULL,
+  file_url text NOT NULL,
+  uploaded_by uuid,
+  uploaded_at timestamp with time zone DEFAULT now(),
+  metadata jsonb DEFAULT '{}'::jsonb,
+  status text DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'archived'::text, 'deleted'::text, 'replaced'::text])),
+  file_size bigint,
+  notes text,
+  category_id uuid,
+  file_name text,
+  CONSTRAINT document_pkey PRIMARY KEY (id),
+  CONSTRAINT document_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.app_user(id),
+  CONSTRAINT document_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT document_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.document_category(id)
+);
+CREATE TABLE public.document_category (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  description text,
+  icon text,
+  sort_order integer DEFAULT 0,
+  CONSTRAINT document_category_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.duties (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clearing_agent_bill_id uuid UNIQUE,
+  ca_vendor_id uuid,
+  custom_duty_value numeric,
+  custom_duty_accessed_perc numeric,
+  acd_value numeric,
+  acd_accessed_perc numeric,
+  sales_tax_value numeric,
+  sales_tax_accessed_perc numeric,
+  ast_value numeric,
+  ast_accessed_perc numeric,
+  income_tax_value numeric,
+  income_tax_accessed_perc numeric,
+  invoice_not_found_value numeric,
+  invoice_not_found_accessed_perc numeric,
+  sub_total_value numeric,
+  sub_total_accessed_perc numeric,
+  excise_duty_value numeric,
+  excise_duty_accessed_perc numeric,
+  release_orders_value numeric,
+  release_orders_accessed_perc numeric,
+  single_decleration_value numeric,
+  single_decleration_accessed_perc numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT duties_pkey PRIMARY KEY (id),
+  CONSTRAINT duties_ca_vendor_id_fkey FOREIGN KEY (ca_vendor_id) REFERENCES public.ca_vendors(id),
+  CONSTRAINT duties_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT duties_clearing_agent_bill_id_fkey FOREIGN KEY (clearing_agent_bill_id) REFERENCES public.clearing_agent_bill(id)
+);
+CREATE TABLE public.enlistment_verification (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  verified boolean NOT NULL,
+  verification_notes text,
+  verified_at timestamp with time zone DEFAULT now(),
+  verifier_id uuid,
+  verification_doc_url text,
+  CONSTRAINT enlistment_verification_pkey PRIMARY KEY (id),
+  CONSTRAINT enlistment_verification_verifier_id_fkey FOREIGN KEY (verifier_id) REFERENCES public.app_user(id),
+  CONSTRAINT enlistment_verification_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.fbr_duty (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL UNIQUE,
+  invoice_amount numeric,
+  insurance_fix numeric,
+  insurance_rate numeric,
+  total_after_insurance numeric,
+  landing_charges_rate numeric,
+  landing_charges_amount numeric,
+  total_invoice numeric,
+  usd_rate numeric,
+  access_value numeric,
+  custom_duty_rate numeric,
+  custom_duty_amount numeric,
+  additional_custom_duty_rate numeric,
+  additional_custom_duty_amount numeric,
+  regulatory_duty_rate numeric,
+  regulatory_duty_amount numeric,
+  value_for_sales_tax numeric,
+  sales_tax_rate numeric,
+  sales_tax_amount numeric,
+  additional_sales_tax_rate numeric,
+  additional_sales_tax_amount numeric,
+  value_for_income_tax numeric,
+  income_tax_rate numeric,
+  income_tax_amount numeric,
+  custom numeric,
+  excise_on_a_value_rate numeric,
+  excise_on_a_value_amount numeric,
+  l_single_declaration_rate numeric,
+  l_single_declaration_amount numeric,
+  m_release_order_rate numeric,
+  m_release_order_amount numeric,
+  n_stamp_duty_rate numeric,
+  n_stamp_duty_amount numeric,
+  total_duties numeric,
+  as_per_psid numeric,
+  difference numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  CONSTRAINT fbr_duty_pkey PRIMARY KEY (id),
+  CONSTRAINT fbr_duty_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT fbr_duty_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT fbr_duty_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.final_payment (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  bank_charges_id uuid NOT NULL UNIQUE,
+  shipment_id uuid NOT NULL,
+  services_charges_amount numeric,
+  services_charges_per numeric,
+  fed_amount numeric,
+  fed_per numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT final_payment_pkey PRIMARY KEY (id),
+  CONSTRAINT final_payment_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT final_payment_bank_charges_id_fkey FOREIGN KEY (bank_charges_id) REFERENCES public.bank_charges(id)
+);
+CREATE TABLE public.forecast (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  year integer NOT NULL CHECK (year >= 2000),
+  product_variety_id uuid,
+  forecast_qty numeric NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  date_of_sowing date,
+  dos_alert_sent boolean DEFAULT false,
+  enlistment_status boolean DEFAULT false,
+  CONSTRAINT forecast_pkey PRIMARY KEY (id),
+  CONSTRAINT forecast_product_variety_id_fkey FOREIGN KEY (product_variety_id) REFERENCES public.product_variety(id)
+);
+CREATE TABLE public.freight_forwarder_bill (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid,
+  mode text,
+  agree_weight_kg numeric,
+  agree_cbm numeric,
+  weight_as_per_pl numeric,
+  weight_as_per_bl numeric,
+  agreed_rate_usd numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT freight_forwarder_bill_pkey PRIMARY KEY (id),
+  CONSTRAINT freight_forwarder_bill_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT freight_forwarder_bill_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.freight_query (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid,
+  logistics_company_id uuid,
+  sent_at timestamp with time zone DEFAULT now(),
+  term USER-DEFINED,
+  shipment_from text,
+  destination text,
+  origin text,
+  readiness_date date,
+  gross_weight numeric,
+  net_weight numeric,
+  chargeable_weight numeric,
+  no_of_cartoons numeric,
+  pick_up_address text,
+  remarks text,
+  CONSTRAINT freight_query_pkey PRIMARY KEY (id),
+  CONSTRAINT freight_query_logistics_company_id_fkey FOREIGN KEY (logistics_company_id) REFERENCES public.logistics_company(id),
+  CONSTRAINT freight_query_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.freight_quote_response (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  freight_query_id uuid,
+  received_at timestamp with time zone DEFAULT now(),
+  name_of_your_company text,
+  name_of_person_filling text,
+  transit_time numeric,
+  flight_schedule text,
+  airline text,
+  cut_of_time numeric,
+  tentative_arrival_date date,
+  freight_charges numeric,
+  do_charges numeric,
+  CONSTRAINT freight_quote_response_pkey PRIMARY KEY (id),
+  CONSTRAINT freight_quote_response_freight_query_id_fkey FOREIGN KEY (freight_query_id) REFERENCES public.freight_query(id)
+);
+CREATE TABLE public.gate_out (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  is_gate_out boolean NOT NULL DEFAULT false,
+  gate_out_date date,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by uuid,
+  CONSTRAINT gate_out_pkey PRIMARY KEY (id),
+  CONSTRAINT gate_out_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id),
+  CONSTRAINT gate_out_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.insurance (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  value numeric,
+  rate numeric,
+  amount numeric,
+  ten_perc numeric,
+  total_value numeric,
+  marine_perc numeric,
+  marine_amount numeric,
+  war_perc numeric,
+  war_amount numeric,
+  asc_1 numeric,
+  fif_perc numeric,
+  fif_amount numeric,
+  sts_perc numeric,
+  sts_amount numeric,
+  stamp numeric,
+  grand_total numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT insurance_pkey PRIMARY KEY (id),
+  CONSTRAINT insurance_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT insurance_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.insurance_documents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  insurance_id uuid NOT NULL,
+  file_url text NOT NULL,
+  file_name text,
+  doc_category text,
+  uploaded_by uuid,
+  uploaded_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT insurance_documents_pkey PRIMARY KEY (id),
+  CONSTRAINT insurance_documents_insurance_id_fkey FOREIGN KEY (insurance_id) REFERENCES public.insurance(id),
+  CONSTRAINT insurance_documents_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.ip_number (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL UNIQUE,
+  issued_date date,
+  file_url text,
+  references jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT ip_number_pkey PRIMARY KEY (id),
+  CONSTRAINT ip_number_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT ip_number_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.issuance (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  bank_charges_id uuid NOT NULL UNIQUE,
+  shipment_id uuid NOT NULL,
+  services_charges_amount numeric,
+  services_charges_per numeric,
+  swift_amount numeric,
+  swift_percentage numeric,
+  fed_amount numeric,
+  fed_per numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT issuance_pkey PRIMARY KEY (id),
+  CONSTRAINT issuance_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT issuance_bank_charges_id_fkey FOREIGN KEY (bank_charges_id) REFERENCES public.bank_charges(id)
+);
+CREATE TABLE public.lc_share_archived (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  shared_date date NOT NULL,
+  notes text,
+  is_lc_shared boolean DEFAULT false,
+  archived_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT lc_share_archived_pkey PRIMARY KEY (id),
+  CONSTRAINT lc_share_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.letter_of_credit (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  bank_id uuid,
+  lc_number text NOT NULL,
+  opened_date date,
+  file_url text,
+  lc_shared boolean DEFAULT false,
+  lc_shared_date date,
+  lc_shared_notes text,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  CONSTRAINT letter_of_credit_pkey PRIMARY KEY (id),
+  CONSTRAINT letter_of_credit_bank_id_fkey FOREIGN KEY (bank_id) REFERENCES public.bank(id),
+  CONSTRAINT letter_of_credit_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT letter_of_credit_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT letter_of_credit_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.logistics_company (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  contact_email text,
+  CONSTRAINT logistics_company_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.measurement_unit (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  unit_name text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  commodity_id uuid,
+  CONSTRAINT measurement_unit_pkey PRIMARY KEY (id),
+  CONSTRAINT measurement_unit_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT measurement_unit_commodity_id_fkey FOREIGN KEY (commodity_id) REFERENCES public.commodity(id)
+);
+CREATE TABLE public.non_negotiable_docs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  bank_id uuid,
+  status text,
+  sended_at timestamp with time zone DEFAULT now(),
+  uploaded_by uuid,
+  file_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  CONSTRAINT non_negotiable_docs_pkey PRIMARY KEY (id),
+  CONSTRAINT non_negotiable_docs_bank_id_fkey FOREIGN KEY (bank_id) REFERENCES public.bank(id),
+  CONSTRAINT non_negotiable_docs_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.app_user(id),
+  CONSTRAINT non_negotiable_docs_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT non_negotiable_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT non_negotiable_docs_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.original_docs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  non_negotiable_docs_id uuid,
+  bank_id uuid,
+  status text,
+  received_at timestamp with time zone DEFAULT now(),
+  uploaded_by uuid,
+  docs_url text,
+  shipping_company text,
+  tracking_number text,
+  shipping_guarantee_applied_date date,
+  shipping_guarantee_received_date date,
+  dispatch_date date,
+  arrival_at_bank date,
+  due_date date,
+  payment_date date,
+  bl_date date,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  CONSTRAINT original_docs_pkey PRIMARY KEY (id),
+  CONSTRAINT original_docs_bank_id_fkey FOREIGN KEY (bank_id) REFERENCES public.bank(id),
+  CONSTRAINT original_docs_non_negotiable_docs_id_fkey FOREIGN KEY (non_negotiable_docs_id) REFERENCES public.non_negotiable_docs(id),
+  CONSTRAINT original_docs_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.app_user(id),
+  CONSTRAINT original_docs_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT original_docs_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT original_docs_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.payment_event_definitions (
+  event_name text NOT NULL,
+  source_table text NOT NULL,
+  date_column text NOT NULL,
+  description text,
+  CONSTRAINT payment_event_definitions_pkey PRIMARY KEY (event_name)
+);
+CREATE TABLE public.payment_terms (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  description text,
+  payment_schedule jsonb NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT payment_terms_pkey PRIMARY KEY (id),
+  CONSTRAINT payment_terms_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.payment_transactions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  supplier_payment_id uuid NOT NULL,
+  amount numeric NOT NULL CHECK (amount > 0::numeric),
+  paid_at timestamp with time zone DEFAULT now(),
+  method text,
+  reference_code text,
+  attachment_url text,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  dollar_rate numeric,
+  CONSTRAINT payment_transactions_pkey PRIMARY KEY (id),
+  CONSTRAINT payment_transactions_supplier_payment_id_fkey FOREIGN KEY (supplier_payment_id) REFERENCES public.supplier_payments(id),
+  CONSTRAINT payment_transactions_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.payments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clearing_agent_bill_id uuid UNIQUE,
+  ca_vendor_id uuid,
+  cd_value numeric,
+  cd_accessed_perc numeric,
+  pra_or_ecs_value numeric,
+  pra_or_ecs_accessed_perc numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT payments_pkey PRIMARY KEY (id),
+  CONSTRAINT payments_ca_vendor_id_fkey FOREIGN KEY (ca_vendor_id) REFERENCES public.ca_vendors(id),
+  CONSTRAINT payments_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT payments_clearing_agent_bill_id_fkey FOREIGN KEY (clearing_agent_bill_id) REFERENCES public.clearing_agent_bill(id)
+);
+CREATE TABLE public.product_price_history (
+  id bigint NOT NULL DEFAULT nextval('product_price_history_id_seq'::regclass),
+  product_variety_id uuid NOT NULL,
+  rate numeric,
+  unit text,
+  changed_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT product_price_history_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_product_variety FOREIGN KEY (product_variety_id) REFERENCES public.product_variety(id)
+);
+CREATE TABLE public.product_variety (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  product_name text NOT NULL,
+  variety_name text NOT NULL,
+  supplier_id uuid,
+  is_registered boolean DEFAULT false,
+  rate_per_unit numeric,
+  unit text,
+  commodity_id uuid,
+  CONSTRAINT product_variety_pkey PRIMARY KEY (id),
+  CONSTRAINT product_variety_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.supplier(id),
+  CONSTRAINT product_variety_commodity_id_fkey FOREIGN KEY (commodity_id) REFERENCES public.commodity(id)
+);
+CREATE TABLE public.proforma_invoice (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  proforma_number text NOT NULL,
+  proforma_date date NOT NULL,
+  file_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  CONSTRAINT proforma_invoice_pkey PRIMARY KEY (id),
+  CONSTRAINT proforma_invoice_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT proforma_invoice_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT proforma_invoice_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.purchase_order (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  po_number text NOT NULL,
+  po_date date NOT NULL,
+  po_file_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  CONSTRAINT purchase_order_pkey PRIMARY KEY (id),
+  CONSTRAINT purchase_order_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT purchase_order_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT purchase_order_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.receipted_port_expense (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clearing_agent_bill_id uuid UNIQUE,
+  ca_vendor_id uuid,
+  detention_value numeric,
+  detention_accessed_perc numeric,
+  demmurage_value numeric,
+  demmurage_accessed_perc numeric,
+  handling_charges_value numeric,
+  handling_charges_accessed_perc numeric,
+  other_expenses_value numeric,
+  other_expenses_accessed_perc numeric,
+  total_value numeric,
+  total_accessed_perc numeric,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT receipted_port_expense_pkey PRIMARY KEY (id),
+  CONSTRAINT receipted_port_expense_ca_vendor_id_fkey FOREIGN KEY (ca_vendor_id) REFERENCES public.ca_vendors(id),
+  CONSTRAINT receipted_port_expense_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT receipted_port_expense_clearing_agent_bill_id_fkey FOREIGN KEY (clearing_agent_bill_id) REFERENCES public.clearing_agent_bill(id)
+);
+CREATE TABLE public.release_orders (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  under_clearing_agent_id uuid,
+  dpp_ro_number text,
+  dpp_date date,
+  fscrd_ro_number text,
+  fscrd_date date,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  CONSTRAINT release_orders_pkey PRIMARY KEY (id),
+  CONSTRAINT release_order_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT release_order_under_clearing_agent_id_fkey FOREIGN KEY (under_clearing_agent_id) REFERENCES public.under_clearing_agent(id),
+  CONSTRAINT release_orders_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT release_orders_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.required_document_config (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  mode_of_transport text NOT NULL CHECK (mode_of_transport = ANY (ARRAY['sea'::text, 'air'::text, 'land'::text, 'rail'::text, 'multimodal'::text])),
+  inco_term text CHECK (inco_term = ANY (ARRAY['EXW'::text, 'FCA'::text, 'CPT'::text, 'FOB'::text, 'CFR'::text, 'CIF'::text, 'DDP'::text])),
+  doc_type text NOT NULL,
+  doc_name text NOT NULL,
+  description text,
+  category_id uuid,
+  is_mandatory boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT required_document_config_pkey PRIMARY KEY (id),
+  CONSTRAINT required_document_config_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.document_category(id)
+);
+CREATE TABLE public.shipment (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  reference_code text NOT NULL UNIQUE,
+  current_stage USER-DEFINED NOT NULL DEFAULT 'forecast'::stage,
+  status USER-DEFINED NOT NULL DEFAULT 'active'::status,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  type USER-DEFINED NOT NULL DEFAULT 'LC'::shipment_type,
+  payment_term_id uuid,
+  mode_of_transport text NOT NULL DEFAULT 'sea'::text CHECK (mode_of_transport = ANY (ARRAY['sea'::text, 'air'::text, 'land'::text, 'rail'::text, 'multimodal'::text])),
+  inco_term text CHECK (inco_term = ANY (ARRAY['EXW'::text, 'FOB'::text, 'CFR'::text, 'FCA'::text, 'CPT'::text, 'DDP'::text])),
+  freight_charges numeric,
+  CONSTRAINT shipment_pkey PRIMARY KEY (id),
+  CONSTRAINT shipment_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT fk_payment_term FOREIGN KEY (payment_term_id) REFERENCES public.payment_terms(id)
+);
+CREATE TABLE public.shipment_awarded (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  freight_query_id uuid,
+  freight_quote_response_id uuid,
+  awarded boolean NOT NULL,
+  notes text,
+  awarded_at timestamp with time zone DEFAULT now(),
+  awarded_by uuid,
+  CONSTRAINT shipment_awarded_pkey PRIMARY KEY (id),
+  CONSTRAINT shipment_awarded_freight_quote_response_fkey FOREIGN KEY (freight_quote_response_id) REFERENCES public.freight_quote_response(id),
+  CONSTRAINT shipment_awarded_freight_query_fkey FOREIGN KEY (freight_query_id) REFERENCES public.freight_query(id),
+  CONSTRAINT shipment_awarded_awarded_by_fkey FOREIGN KEY (awarded_by) REFERENCES public.app_user(id),
+  CONSTRAINT shipment_awarded_shipment_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.shipment_products (
+  shipment_id uuid NOT NULL,
+  product_variety_id uuid NOT NULL,
+  quantity numeric,
+  unit text,
+  rate numeric,
+  amount numeric,
+  CONSTRAINT shipment_products_pkey PRIMARY KEY (shipment_id, product_variety_id),
+  CONSTRAINT shipment_products_product_variety_id_fkey FOREIGN KEY (product_variety_id) REFERENCES public.product_variety(id),
+  CONSTRAINT shipment_products_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.shipment_products_audit (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL,
+  product_variety_id uuid NOT NULL,
+  action text NOT NULL CHECK (action = ANY (ARRAY['added'::text, 'removed'::text, 'quantity_changed'::text, 'unit_changed'::text, 'rate_changed'::text, 'amount_changed'::text])),
+  old_quantity numeric,
+  old_unit text,
+  old_rate numeric,
+  old_amount numeric,
+  new_quantity numeric,
+  new_unit text,
+  new_rate numeric,
+  new_amount numeric,
+  changed_by uuid,
+  changed_at timestamp with time zone DEFAULT now(),
+  change_reason text,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  CONSTRAINT shipment_products_audit_pkey PRIMARY KEY (id),
+  CONSTRAINT shipment_products_audit_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT shipment_products_audit_product_variety_id_fkey FOREIGN KEY (product_variety_id) REFERENCES public.product_variety(id),
+  CONSTRAINT shipment_products_audit_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.shipment_status_migration_backup (
+  id uuid,
+  reference_code text,
+  current_stage USER-DEFINED,
+  status USER-DEFINED,
+  created_at timestamp with time zone,
+  backup_created_at timestamp with time zone
+);
+CREATE TABLE public.stage_details (
+  stage_name USER-DEFINED NOT NULL,
+  responsible_team text NOT NULL,
+  expected_duration_days integer NOT NULL,
+  CONSTRAINT stage_details_pkey PRIMARY KEY (stage_name)
+);
+CREATE TABLE public.stage_edge (
+  from_stage USER-DEFINED NOT NULL,
+  to_stage USER-DEFINED NOT NULL,
+  CONSTRAINT stage_edge_pkey PRIMARY KEY (from_stage, to_stage)
+);
+CREATE TABLE public.supplier (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  contact_email text,
+  contact_phone text,
+  is_lc_shared boolean DEFAULT false,
+  default_payment_term_id uuid,
+  CONSTRAINT supplier_pkey PRIMARY KEY (id),
+  CONSTRAINT supplier_default_payment_term_id_fkey FOREIGN KEY (default_payment_term_id) REFERENCES public.payment_terms(id)
+);
+CREATE TABLE public.supplier_office (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_by uuid,
+  supplier_id uuid NOT NULL,
+  office_type text,
+  address text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT supplier_office_pkey PRIMARY KEY (id),
+  CONSTRAINT supplier_office_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id),
+  CONSTRAINT supplier_office_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.supplier(id)
+);
+CREATE TABLE public.supplier_payments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL UNIQUE,
+  supplier_id uuid NOT NULL,
+  payment_term_id uuid NOT NULL,
+  total_amount numeric NOT NULL,
+  amount_paid numeric NOT NULL DEFAULT 0,
+  due_date date,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'partially_paid'::text, 'paid'::text, 'overdue'::text])),
+  proof_of_payment_url text,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  dollar_rate numeric,
+  CONSTRAINT supplier_payments_pkey PRIMARY KEY (id),
+  CONSTRAINT supplier_payments_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT supplier_payments_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.supplier(id),
+  CONSTRAINT supplier_payments_payment_term_id_fkey FOREIGN KEY (payment_term_id) REFERENCES public.payment_terms(id),
+  CONSTRAINT supplier_payments_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.supplier_shipment_details (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  readiness_date date,
+  gross_weight numeric,
+  cartons_count integer,
+  transport USER-DEFINED,
+  details_received_date date,
+  length numeric,
+  width numeric,
+  height numeric,
+  inco_terms text CHECK (inco_terms = ANY (ARRAY['EXW'::text, 'FOB'::text, 'CFR'::text, 'DDP'::text, 'FCA'::text, 'CPT'::text])),
+  address text,
+  origin text,
+  container_type text CHECK (container_type = ANY (ARRAY['carton'::text, 'pallet'::text])),
+  net_weight numeric,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by uuid,
+  CONSTRAINT supplier_shipment_details_pkey PRIMARY KEY (id),
+  CONSTRAINT supplier_shipment_details_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT supplier_shipment_details_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.transporter (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  transporter_name text,
+  bilti_number text,
+  bilti_date date,
+  no_of_pieces integer,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by uuid,
+  CONSTRAINT transporter_pkey PRIMARY KEY (id),
+  CONSTRAINT transporter_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id),
+  CONSTRAINT transporter_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.under_clearing_agent (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  clearing_agent_id uuid,
+  docs_to_clearing_agent_id uuid,
+  is_received boolean NOT NULL DEFAULT false,
+  receiving_date date,
+  destuffed_date date,
+  frsd_application_date date,
+  duty_payment_date date,
+  sampling_date date,
+  do_date date,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by uuid,
+  CONSTRAINT under_clearing_agent_pkey PRIMARY KEY (id),
+  CONSTRAINT under_clearing_agent_clearing_agent_id_fkey FOREIGN KEY (clearing_agent_id) REFERENCES public.clearing_agent(id),
+  CONSTRAINT under_clearing_agent_docs_to_clearing_agent_id_fkey FOREIGN KEY (docs_to_clearing_agent_id) REFERENCES public.docs_to_clearing_agent(id),
+  CONSTRAINT under_clearing_agent_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT under_clearing_agent_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.verification_list (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  sr_no numeric,
+  hs_code text NOT NULL,
+  submission_date date,
+  description text,
+  crop_id uuid,
+  exporter_id uuid,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT verification_list_pkey PRIMARY KEY (id),
+  CONSTRAINT verification_list_crop_id_fkey FOREIGN KEY (crop_id) REFERENCES public.product_variety(id),
+  CONSTRAINT verification_list_exporter_id_fkey FOREIGN KEY (exporter_id) REFERENCES public.supplier(id),
+  CONSTRAINT verification_list_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.app_user(id)
+);
+CREATE TABLE public.warehouse (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  warehouse_name text,
+  address text,
+  city text,
+  latitude numeric,
+  longitude numeric,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by uuid,
+  email text,
+  CONSTRAINT warehouse_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.warehouse_arrival (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid UNIQUE,
+  arrival_date date,
+  gr_no text,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by uuid,
+  warehouse_id uuid,
+  CONSTRAINT warehouse_arrival_pkey PRIMARY KEY (id),
+  CONSTRAINT warehouse_arrival_warehouse_id_fkey FOREIGN KEY (warehouse_id) REFERENCES public.warehouse(id),
+  CONSTRAINT warehouse_arrival_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.app_user(id),
+  CONSTRAINT warehouse_arrival_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id)
+);
+CREATE TABLE public.warehouse_communication (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL,
+  warehouse_id uuid NOT NULL,
+  sent_by uuid NOT NULL,
+  sent_at timestamp with time zone DEFAULT now(),
+  email_subject text,
+  email_body text,
+  cc_emails ARRAY,
+  status text,
+  CONSTRAINT warehouse_communication_pkey PRIMARY KEY (id),
+  CONSTRAINT warehouse_communication_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.shipment(id),
+  CONSTRAINT warehouse_communication_warehouse_id_fkey FOREIGN KEY (warehouse_id) REFERENCES public.warehouse(id),
+  CONSTRAINT warehouse_communication_sent_by_fkey FOREIGN KEY (sent_by) REFERENCES public.app_user(id)
+);

@@ -1,0 +1,33 @@
+# Debug Helper Script
+Write-Host "🐛 Stage Requirements Debug Helper" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Issue: Shipment stuck at Forecast stage despite having:" -ForegroundColor Yellow
+Write-Host "  ✅ Seed commodity product" -ForegroundColor Green
+Write-Host "  ✅ Forecast exists for 2025" -ForegroundColor Green  
+Write-Host "  ✅ Enlistment status is true" -ForegroundColor Green
+Write-Host "  ❌ Still getting 'Requirements not met'" -ForegroundColor Red
+Write-Host ""
+Write-Host "SOLUTION STEPS:" -ForegroundColor Magenta
+Write-Host ""
+Write-Host "1. 🔧 UPDATE BACKEND FUNCTION:" -ForegroundColor White
+Write-Host "   • Open Supabase Dashboard → SQL Editor" -ForegroundColor Gray
+Write-Host "   • Copy contents of: quick_fix_stage_requirements.sql" -ForegroundColor Gray
+Write-Host "   • Execute the SQL to replace the function" -ForegroundColor Gray
+Write-Host ""
+Write-Host "2. 🧪 TEST WITH DEBUG QUERIES:" -ForegroundColor White
+Write-Host "   • Copy contents of: debug_shipment_test.sql" -ForegroundColor Gray
+Write-Host "   • Replace 'YOUR_SHIPMENT_ID' with actual shipment UUID" -ForegroundColor Gray
+Write-Host "   • Run queries to verify data structure" -ForegroundColor Gray
+Write-Host ""
+Write-Host "3. 🔄 REFRESH SHIPMENT TRACKER:" -ForegroundColor White
+Write-Host "   • Reload the shipment tracker page" -ForegroundColor Gray
+Write-Host "   • Should auto-advance if conditions are met" -ForegroundColor Gray
+Write-Host ""
+Write-Host "MOST LIKELY CAUSE:" -ForegroundColor Red
+Write-Host "The backend function still has the old logic:" -ForegroundColor Yellow
+Write-Host "  WHEN 'enlistment_verification' THEN RETURN FALSE;" -ForegroundColor Red
+Write-Host ""
+Write-Host "Files created for you:" -ForegroundColor Green
+Write-Host "  • quick_fix_stage_requirements.sql (PRIORITY - Run this first)" -ForegroundColor Cyan
+Write-Host "  • debug_shipment_test.sql (For diagnosis)" -ForegroundColor Cyan
+Write-Host "  • DEBUG_STAGE_REQUIREMENTS.md (Documentation)" -ForegroundColor Cyan

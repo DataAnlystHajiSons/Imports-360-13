@@ -1,0 +1,1 @@
+ALTER TABLE public.shipment_awarded ADD CONSTRAINT shipment_awarded_awarded_by_fkey FOREIGN KEY (awarded_by) REFERENCES public.app_user(id);

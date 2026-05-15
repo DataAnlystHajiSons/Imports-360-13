@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Stage Target Alerts</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 700px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .config-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .config-section h3 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+
+    .form-field {
+      margin-bottom: 15px;
+    }
+
+    .form-field label {
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .form-field input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .form-field input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .form-field small {
+      display: block;
+      margin-top: 5px;
+      color: #888;
+      font-size: 12px;
+    }
+
+    .button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .button:active {
+      transform: translateY(0);
+    }
+
+    .button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .result.success {
+      background: #d4edda;
+      border: 2px solid #c3e6cb;
+      color: #155724;
+      display: block;
+    }
+
+    .result.error {
+      background: #f8d7da;
+      border: 2px solid #f5c6cb;
+      color: #721c24;
+      display: block;
+    }
+
+    .result h3 {
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .result pre {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .loading.active {
+      display: block;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #2196F3;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+
+    .info-box h4 {
+      color: #0d47a1;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .info-box ul {
+      margin-left: 20px;
+      color: #1565c0;
+      font-size: 13px;
+    }
+
+    .info-box li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Test Stage Target Alerts</h1>
+    <p class="subtitle">Manually trigger the email alert edge function</p>
+
+    <div class="info-box">
+      <h4>📋 Before Testing:</h4>
+      <ul>
+        <li>Run <code>test_stage_alerts_now.sql</code> in Supabase to create test data</li>
+        <li>Make sure you have recipients in the <code>alert_emails_list</code> table</li>
+        <li>Verify <code>RESEND_API_KEY</code> is configured in Edge Functions settings</li>
+      </ul>
+    </div>
+
+    <div class="config-section">
+      <h3>⚙️ Configuration</h3>
+      
+      <div class="form-field">
+        <label for="project-url">Supabase Project URL</label>
+        <input 
+          type="text" 
+          id="project-url" 
+          placeholder="https://your-project.supabase.co"
+          value="https://sfknzqkiqxivzcualcau.supabase.co"
+        />
+        <small>Found in: Supabase Dashboard → Settings → API</small>
+      </div>
+
+      <div class="form-field">
+        <label for="anon-key">Supabase Anon Key</label>
+        <input 
+          type="password" 
+          id="anon-key" 
+          placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNma256cWtpcXhpdnpjdWFsY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3OTU0ODksImV4cCI6MjA3MjM3MTQ4OX0.JKjOS9NRdbVH1UanfqmBeHmMSnlWlZtDr-5LdKw5YaA"
+        />
+        <small>Found in: Supabase Dashboard → Settings → API → anon public key</small>
+      </div>
+    </div>
+
+    <button class="button" onclick="triggerAlerts()">
+      🚀 Trigger Alert Emails Now
+    </button>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Invoking edge function...</p>
+    </div>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    async function triggerAlerts() {
+      const projectUrl = document.getElementById('project-url').value.trim();
+      const anonKey = document.getElementById('anon-key').value.trim();
+      const button = document.querySelector('.button');
+      const loading = document.getElementById('loading');
+      const result = document.getElementById('result');
+
+      // Validate inputs
+      if (!projectUrl || !anonKey) {
+        showResult('error', '❌ Configuration Required', 
+          'Please fill in both Project URL and Anon Key.');
+        return;
+      }
+
+      // Show loading
+      button.disabled = true;
+      loading.classList.add('active');
+      result.style.display = 'none';
+
+      try {
+        // Call the edge function
+        const url = `${projectUrl}/functions/v1/send-stage-target-alerts`;
+        
+        console.log('Calling:', url);
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${anonKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        console.log('Response:', data);
+
+        if (response.ok) {
+          showResult('success', '✅ Function Executed Successfully', 
+            `Alerts processed: ${data.alertsSent || 0}\n\n` +
+            `Response:\n${JSON.stringify(data, null, 2)}\n\n` +
+            `✅ Check your email inbox for alert emails!\n` +
+            `📊 Check Supabase → Edge Functions → Logs for details`
+          );
+        } else {
+          showResult('error', '❌ Function Error', 
+            `Status: ${response.status}\n\n` +
+            `Error:\n${JSON.stringify(data, null, 2)}`
+          );
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showResult('error', '❌ Request Failed', 
+          `${error.message}\n\n` +
+          `Possible causes:\n` +
+          `- Edge function not deployed\n` +
+          `- Incorrect Project URL or Anon Key\n` +
+          `- Network/CORS issues\n\n` +
+          `Check browser console for more details`
+        );
+      } finally {
+        button.disabled = false;
+        loading.classList.remove('active');
+      }
+    }
+
+    function showResult(type, title, message) {
+      const result = document.getElementById('result');
+      result.className = `result ${type}`;
+      result.innerHTML = `
+        <h3>${title}</h3>
+        <pre>${message}</pre>
+      `;
+    }
+  </script>
+</body>
+</html>

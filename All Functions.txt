@@ -1,0 +1,532 @@
+----All the Functions----
+
+****advance_stage****
+
+
+DECLARE
+  v_from_stage public.stage;
+BEGIN
+  -- Lock the shipment row to prevent race conditions
+  SELECT current_stage INTO v_from_stage
+  FROM public.shipment
+  WHERE id = p_shipment_id
+  FOR UPDATE;
+
+  -- Check if the transition is valid
+  IF NOT EXISTS (
+    SELECT 1 FROM public.stage_edge
+    WHERE from_stage = v_from_stage AND to_stage = p_to_stage
+  ) THEN
+    RAISE EXCEPTION 'Invalid stage transition: % -> %', v_from_stage, p_to_stage;
+  END IF;
+
+  -- Check if the requirements for the new stage are met
+  IF NOT public.stage_requirements_met(p_shipment_id, p_to_stage) THEN
+    RAISE EXCEPTION 'Requirements not met for stage %', p_to_stage;
+  END IF;
+
+  -- Update the shipment stage
+  UPDATE public.shipment
+  SET current_stage = p_to_stage
+  WHERE id = p_shipment_id;
+
+  -- Insert a record into the audit log
+  INSERT INTO public.audit_log(shipment_id, actor_id, action, from_stage, to_stage, meta)
+  VALUES (p_shipment_id, auth.uid(), 'advance_stage', v_from_stage, p_to_stage, p_meta);
+END;
+
+
+****filter_shipments****
+
+
+BEGIN
+  RETURN QUERY
+  SELECT *
+  FROM v_shipments_with_all_details s
+  WHERE
+    (p_search_term IS NULL OR s.reference_code ILIKE '%' || p_search_term || '%' OR s.product_name ILIKE '%' || p_search_term || '%' OR s.variety_name ILIKE '%' || p_search_term || '%' OR s.supplier_name ILIKE '%' || p_search_term || '%') AND
+    (p_supplier_id IS NULL OR s.supplier_id = p_supplier_id) AND
+    (p_clearing_agent_id IS NULL OR s.clearing_agent_id = p_clearing_agent_id) AND
+    (p_bank_id IS NULL OR s.bank_id = p_bank_id) AND
+    (p_status IS NULL OR s.status = p_status::status) AND
+    (p_commodity IS NULL OR s.commodity = p_commodity) AND
+    (p_lc_number IS NULL OR s.lc_number ILIKE '%' || p_lc_number || '%') AND
+    (p_product_name IS NULL OR s.product_name ILIKE '%' || p_product_name || '%' OR EXISTS (
+      SELECT 1
+      FROM jsonb_to_recordset(s.product_variety) AS x(product_name TEXT)
+      WHERE x.product_name ILIKE '%' || p_product_name || '%'
+    )) AND
+    (p_variety_name IS NULL OR s.variety_name ILIKE '%' || p_variety_name || '%' OR EXISTS (
+      SELECT 1
+      FROM jsonb_to_recordset(s.product_variety) AS x(variety_name TEXT)
+      WHERE x.variety_name ILIKE '%' || p_variety_name || '%'
+    ));
+END;
+
+
+****get_documents_by_dimension****
+
+
+BEGIN
+  RETURN QUERY
+  SELECT * FROM document;
+END;
+
+
+****get_stage_order****
+
+
+DECLARE
+    v_order INT;
+BEGIN
+    WITH RECURSIVE stage_path AS (
+        SELECT from_stage as stage, 1 as level
+        FROM public.stage_edge
+        WHERE from_stage = 'forecast'
+        UNION ALL
+        SELECT e.to_stage, p.level + 1
+        FROM public.stage_edge e
+        JOIN stage_path p ON e.from_stage = p.stage
+    )
+    SELECT level INTO v_order
+    FROM stage_path
+    WHERE stage = p_stage;
+
+    RETURN v_order;
+END;
+
+****handle_freight_query_insert****
+
+
+DECLARE
+  v_shipment_current_stage public.stage;
+  v_next_stage public.stage;
+BEGIN
+  -- Get the current stage of the shipment
+  SELECT current_stage INTO v_shipment_current_stage
+  FROM public.shipment
+  WHERE id = NEW.shipment_id;
+
+  -- Check if the shipment is in the correct stage to be advanced
+  IF v_shipment_current_stage = 'freight_query' THEN
+    -- Find the next stage from the stage_edge table
+    SELECT to_stage INTO v_next_stage
+    FROM public.stage_edge
+    WHERE from_stage = v_shipment_current_stage;
+
+    -- If there is a next stage, advance the stage
+    IF v_next_stage IS NOT NULL THEN
+        PERFORM public.advance_stage(NEW.shipment_id, v_next_stage);
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+
+****handle_stage_change****
+
+
+DECLARE
+  v_next_stage public.stage;
+BEGIN
+  -- Get the next stage from the stage_edge table
+  SELECT to_stage INTO v_next_stage
+  FROM public.stage_edge
+  WHERE from_stage = NEW.current_stage;
+
+  -- If there is a next stage, try to advance to it
+  IF v_next_stage IS NOT NULL THEN
+    PERFORM public.advance_stage(NEW.id, v_next_stage);
+  END IF;
+
+  RETURN NEW;
+END;
+
+
+****handle_stage_reversal****
+
+
+DECLARE
+  v_previous_stage public.stage;
+  v_current_stage public.stage;
+  v_shipment_id uuid;
+BEGIN
+  -- Get the shipment_id from the deleted row
+  v_shipment_id := OLD.shipment_id;
+
+  -- Get the current stage of the shipment
+  SELECT current_stage INTO v_current_stage
+  FROM public.shipment
+  WHERE id = v_shipment_id;
+
+  -- Find the previous stage from the stage_edge table
+  SELECT from_stage INTO v_previous_stage
+  FROM public.stage_edge
+  WHERE to_stage = v_current_stage;
+
+  -- If there is no previous stage, do nothing
+  IF v_previous_stage IS NULL THEN
+    RETURN OLD;
+  END IF;
+
+  -- Check if the requirements for the previous stage are met.
+  -- This is a safety check; they should be met if the workflow was followed.
+  IF NOT public.stage_requirements_met(v_shipment_id, v_previous_stage) THEN
+    RAISE EXCEPTION 'Cannot revert to stage % because its requirements are not met.', v_previous_stage;
+  END IF;
+
+  -- Update the shipment's current_stage to the previous stage
+  UPDATE public.shipment
+  SET current_stage = v_previous_stage
+  WHERE id = v_shipment_id;
+
+  -- Insert a record into the audit log
+  INSERT INTO public.audit_log(shipment_id, actor_id, action, from_stage, to_stage, meta)
+  VALUES (v_shipment_id, auth.uid(), 'revert_stage', v_current_stage, v_previous_stage, jsonb_build_object('auto', true, 'reason', 'data deleted from ' || TG_TABLE_NAME));
+
+  RETURN OLD;
+END;
+
+****handle_stage_update****
+
+
+DECLARE
+    v_stage_name TEXT;
+    v_stage_done_col TEXT;
+    v_is_done BOOLEAN;
+    v_shipment_current_stage public.stage;
+    v_stage_order INT;
+    v_current_stage_order INT;
+BEGIN
+    -- Map table name to stage name and checklist column name
+    CASE TG_TABLE_NAME
+        WHEN 'enlistment_verification' THEN
+            v_stage_name := 'enlistment_verification';
+            v_stage_done_col := 'enlistment_verification_done';
+        WHEN 'availability_confirmation' THEN
+            v_stage_name := 'availability_confirmation';
+            v_stage_done_col := 'availability_confirmation_done';
+        WHEN 'purchase_order' THEN
+            v_stage_name := 'purchase_order';
+            v_stage_done_col := 'purchase_order_done';
+        WHEN 'proforma_invoice' THEN
+            v_stage_name := 'proforma';
+            v_stage_done_col := 'proforma_done';
+        WHEN 'commercial_invoice' THEN
+            v_stage_name := 'invoice';
+            v_stage_done_col := 'invoice_done';
+        WHEN 'ip_number' THEN
+            v_stage_name := 'ip_number';
+            v_stage_done_col := 'ip_number_done';
+        WHEN 'letter_of_credit' THEN
+            v_stage_name := 'lc_opening';
+            v_stage_done_col := 'lc_opening_done';
+        WHEN 'lc_share' THEN
+            v_stage_name := 'lc_shared_with_supplier';
+            v_stage_done_col := 'lc_shared_with_supplier_done';
+        WHEN 'supplier_shipment_details' THEN
+            v_stage_name := 'shipment_details_from_supplier';
+            v_stage_done_col := 'shipment_details_from_supplier_done';
+        WHEN 'freight_query' THEN
+            v_stage_name := 'freight_query';
+            v_stage_done_col := 'freight_query_done';
+        WHEN 'shipment_awarded' THEN
+            v_stage_name := 'award_shipment';
+            v_stage_done_col := 'award_shipment_done';
+        WHEN 'non_negotiable_docs' THEN
+            v_stage_name := 'non_negotiable_docs';
+            v_stage_done_col := 'non_negotiable_docs_done';
+        WHEN 'original_docs' THEN
+            v_stage_name := 'original_docs';
+            v_stage_done_col := 'original_docs_done';
+        WHEN 'bank_endorsement' THEN
+            v_stage_name := 'bank_endorsement';
+            v_stage_done_col := 'bank_endorsement_done';
+        WHEN 'docs_to_clearing_agent' THEN
+            v_stage_name := 'send_to_clearing_agent';
+            v_stage_done_col := 'send_to_clearing_agent_done';
+        WHEN 'under_clearing_agent' THEN
+            v_stage_name := 'under_clearing_agent';
+            v_stage_done_col := 'under_clearing_agent_done';
+        WHEN 'release_orders' THEN
+            v_stage_name := 'release_orders';
+            v_stage_done_col := 'release_orders_done';
+        WHEN 'gate_out' THEN
+            v_stage_name := 'gate_out';
+            v_stage_done_col := 'gate_out_done';
+        WHEN 'transporter' THEN
+            v_stage_name := 'transportation';
+            v_stage_done_col := 'transportation_done';
+        WHEN 'warehouse_arrival' THEN
+            v_stage_name := 'warehouse';
+            v_stage_done_col := 'warehouse_done';
+        WHEN 'bills' THEN
+            v_stage_name := 'bills';
+            v_stage_done_col := 'bills_done';
+        ELSE
+            RETURN NEW;
+    END CASE;
+
+    -- Check if the stage is now incomplete
+    EXECUTE format('SELECT %I FROM public.v_shipment_stage_checklist WHERE shipment_id = %L', v_stage_done_col, NEW.shipment_id)
+    INTO v_is_done;
+
+    IF NOT v_is_done THEN
+        -- Get the current stage of the shipment
+        SELECT current_stage INTO v_shipment_current_stage
+        FROM public.shipment
+        WHERE id = NEW.shipment_id;
+
+        -- Get the order of the stages
+        v_stage_order := get_stage_order(v_stage_name::public.stage);
+        v_current_stage_order := get_stage_order(v_shipment_current_stage);
+
+        -- If the shipment has moved past the current stage, revert it
+        IF v_current_stage_order > v_stage_order THEN
+            UPDATE public.shipment
+            SET current_stage = v_stage_name::public.stage
+            WHERE id = NEW.shipment_id;
+
+            -- Add to audit log
+            INSERT INTO public.audit_log(shipment_id, actor_id, action, from_stage, to_stage, meta)
+            VALUES (NEW.shipment_id, auth.uid(), 'revert_stage', v_shipment_current_stage, v_stage_name::public.stage, jsonb_build_object('auto', true, 'reason', 'data updated in ' || TG_TABLE_NAME));
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+
+****handle_supplier_details_insert****
+
+
+DECLARE
+  v_shipment_current_stage public.stage;
+  v_next_stage public.stage;
+BEGIN
+  -- Get the current stage of the shipment
+  SELECT current_stage INTO v_shipment_current_stage
+  FROM public.shipment
+  WHERE id = NEW.shipment_id;
+
+  -- Check if the shipment is in the correct stage to be advanced
+  IF v_shipment_current_stage = 'shipment_details_from_supplier' THEN
+    -- Find the next stage from the stage_edge table
+    SELECT to_stage INTO v_next_stage
+    FROM public.stage_edge
+    WHERE from_stage = v_shipment_current_stage;
+
+    -- If there is a next stage, advance the stage
+    IF v_next_stage IS NOT NULL THEN
+        PERFORM public.advance_stage(NEW.shipment_id, v_next_stage);
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+
+
+****refresh_enlistment_status****
+
+
+BEGIN
+    UPDATE public.forecast f
+    SET enlistment_status = EXISTS (
+        SELECT 1
+        FROM public.verification_list vl
+        WHERE vl.crop_id = f.product_variety_id
+    )
+    WHERE f.enlistment_status IS DISTINCT FROM EXISTS (
+        SELECT 1 
+        FROM public.verification_list vl 
+        WHERE vl.crop_id = f.product_variety_id
+    );
+END;
+
+****update_shipment_status_to_completed****
+
+BEGIN
+  IF NEW.costing IS NOT NULL THEN
+    UPDATE public.shipment
+    SET status = 'completed'
+    WHERE id = NEW.shipment_id;
+  END IF;
+  RETURN NEW;
+END;
+
+
+****stage_requirements_met****
+
+
+DECLARE
+  shipment_rec record;
+  has_seed_commodity BOOLEAN := FALSE;
+  seed_commodity_id uuid;
+BEGIN
+  -- Get the shipment record
+  SELECT * INTO shipment_rec
+  FROM public.shipment
+  WHERE id = p_shipment_id;
+
+  -- Check if shipment has any products from "Seed" commodity
+  SELECT c.id INTO seed_commodity_id
+  FROM public.commodity c
+  WHERE LOWER(c.name) = 'seed'
+  LIMIT 1;
+
+  IF seed_commodity_id IS NOT NULL THEN
+    SELECT EXISTS (
+      SELECT 1 
+      FROM public.shipment_products sp
+      JOIN public.product_variety pv ON sp.product_variety_id = pv.id
+      WHERE sp.shipment_id = p_shipment_id 
+      AND pv.commodity_id = seed_commodity_id
+    ) INTO has_seed_commodity;
+  END IF;
+
+  CASE p_to_stage
+    WHEN 'enlistment_verification' THEN
+      -- If no seed commodity, auto-advance. If has seed commodity, check forecast requirement
+      IF NOT has_seed_commodity THEN
+        RETURN TRUE; -- No seed commodity, skip forecast stage
+      ELSE
+        -- Check if seed commodity product is in forecast for current year
+        RETURN EXISTS (
+          SELECT 1 
+          FROM public.shipment_products sp
+          JOIN public.product_variety pv ON sp.product_variety_id = pv.id
+          JOIN public.forecast f ON f.product_variety_id = pv.id
+          WHERE sp.shipment_id = p_shipment_id 
+          AND pv.commodity_id = seed_commodity_id
+          AND f.year = EXTRACT(YEAR FROM CURRENT_DATE)
+        );
+      END IF;
+    WHEN 'availability_confirmation' THEN
+      -- If no seed commodity, auto-advance. If has seed commodity, check enlistment status
+      IF NOT has_seed_commodity THEN
+        RETURN TRUE; -- No seed commodity, skip enlistment verification stage
+      ELSE
+        -- Check if enlistment status is true for seed commodity product
+        RETURN EXISTS (
+          SELECT 1 
+          FROM public.shipment_products sp
+          JOIN public.product_variety pv ON sp.product_variety_id = pv.id
+          JOIN public.forecast f ON f.product_variety_id = pv.id
+          WHERE sp.shipment_id = p_shipment_id 
+          AND pv.commodity_id = seed_commodity_id
+          AND f.enlistment_status = TRUE
+          AND f.year = EXTRACT(YEAR FROM CURRENT_DATE)
+        );
+      END IF;
+    WHEN 'purchase_order' THEN
+      -- Advance only when the boolean field is true
+      RETURN EXISTS (
+        SELECT 1 FROM public.availability_confirmation ac
+        WHERE ac.shipment_id = p_shipment_id AND ac.available = TRUE
+      );
+    WHEN 'proforma' THEN
+      -- Advance only when the required document has been uploaded
+      RETURN EXISTS (
+        SELECT 1 FROM public.purchase_order po
+        WHERE po.shipment_id = p_shipment_id AND po.po_file_url IS NOT NULL
+      );
+    WHEN 'invoice' THEN
+      -- Advance only when the required document has been uploaded
+      RETURN EXISTS (
+        SELECT 1 FROM public.proforma_invoice pi
+        WHERE pi.shipment_id = p_shipment_id AND pi.file_url IS NOT NULL
+      );
+    WHEN 'ip_number' THEN
+      -- Advance only when the required document has been uploaded
+      RETURN EXISTS (
+        SELECT 1 FROM public.commercial_invoice ci
+        WHERE ci.shipment_id = p_shipment_id AND ci.file_url IS NOT NULL
+      );
+    WHEN 'lc_opening' THEN
+      -- Advance only when the required document has been uploaded
+      RETURN EXISTS (
+        SELECT 1 FROM public.ip_number ip
+        WHERE ip.shipment_id = p_shipment_id AND ip.file_url IS NOT NULL
+      );
+    WHEN 'lc_shared_with_supplier' THEN
+      -- Advance only when the required document has been uploaded
+      RETURN EXISTS (
+        SELECT 1 FROM public.letter_of_credit lc
+        WHERE lc.shipment_id = p_shipment_id AND lc.file_url IS NOT NULL
+      );
+    WHEN 'shipment_details_from_supplier' THEN
+      RETURN EXISTS (
+        SELECT 1 FROM public.lc_share lcs
+        WHERE lcs.shipment_id = p_shipment_id
+      );
+    WHEN 'freight_query' THEN
+      RETURN EXISTS (
+        SELECT 1 FROM public.supplier_shipment_details ssd
+        WHERE ssd.shipment_id = p_shipment_id
+      );
+    WHEN 'award_shipment' THEN
+      -- Advance only when the boolean field is true
+      RETURN EXISTS (
+        SELECT 1 FROM public.freight_query fq
+        WHERE fq.shipment_id = p_shipment_id
+      );
+    WHEN 'non_negotiable_docs' THEN
+      -- Advance only when the boolean field is true
+      RETURN EXISTS (
+        SELECT 1 FROM public.shipment_awarded sa
+        WHERE sa.shipment_id = p_shipment_id AND sa.awarded = TRUE
+      );
+    WHEN 'original_docs' THEN
+      -- Advance only when the required document has been uploaded
+      RETURN EXISTS (
+        SELECT 1 FROM public.non_negotiable_docs nnd
+        WHERE nnd.shipment_id = p_shipment_id AND nnd.docs_url IS NOT NULL
+      );
+    WHEN 'bank_endorsement' THEN
+      -- Advance only when the required document has been uploaded
+      RETURN EXISTS (
+        SELECT 1 FROM public.original_docs od
+        WHERE od.shipment_id = p_shipment_id AND od.docs_url IS NOT NULL
+      );
+    WHEN 'send_to_clearing_agent' THEN
+      -- Advance only when the boolean field is true
+      RETURN EXISTS (
+        SELECT 1 FROM public.bank_endorsement be
+        WHERE be.shipment_id = p_shipment_id AND be.endorsed = TRUE
+      );
+    WHEN 'under_clearing_agent' THEN
+      -- Advance only when the required document has been uploaded
+      RETURN EXISTS (
+        SELECT 1 FROM public.docs_to_clearing_agent dtca
+        WHERE dtca.shipment_id = p_shipment_id AND dtca.slip_picture_url IS NOT NULL
+      );
+    WHEN 'release_orders' THEN
+      -- Advance only when the boolean field is true
+      RETURN EXISTS (
+        SELECT 1 FROM public.under_clearing_agent uca
+        WHERE uca.shipment_id = p_shipment_id AND uca.is_received = TRUE
+      );
+    WHEN 'gate_out' THEN
+      RETURN EXISTS (
+        SELECT 1 FROM public.release_orders ro
+        WHERE ro.shipment_id = p_shipment_id
+      );
+    WHEN 'transportation' THEN
+      -- Advance only when the boolean field is true
+      RETURN EXISTS (
+        SELECT 1 FROM public.gate_out go
+        WHERE go.shipment_id = p_shipment_id AND go.is_gate_out = TRUE
+      );
+    WHEN 'warehouse' THEN
+      RETURN EXISTS (
+        SELECT 1 FROM public.transporter t
+        WHERE t.shipment_id = p_shipment_id
+      );
+    WHEN 'bills' THEN
+      RETURN EXISTS (
+        SELECT 1 FROM public.warehouse_arrival wa
+        WHERE wa.shipment_id = p_shipment_id
+      );
+    ELSE
+      RETURN FALSE;
+  END CASE;
+END;

@@ -1,0 +1,302 @@
+================================================================================
+  STAGE TARGET DATES FEATURE - INTEGRATION GUIDE
+================================================================================
+
+This guide explains how to integrate the Stage Target Dates feature into your
+Imports 360 shipment management system.
+
+================================================================================
+  FEATURE OVERVIEW
+================================================================================
+
+The Stage Target Dates feature allows users to:
+1. Assign target completion dates to specific shipment stages
+2. Receive automated email alerts 3 days before the target date
+3. Receive warning emails when target dates are overdue
+4. View target date status in the shipment tracker UI
+
+================================================================================
+  STEP 1: DATABASE SETUP
+================================================================================
+
+1. Run the SQL script to create the required tables and functions:
+   
+   File: add_stage_target_dates.sql
+   
+   Execute this in your Supabase SQL editor or using psql:
+   ```bash
+   psql -h your-db-host -U postgres -d postgres -f add_stage_target_dates.sql
+   ```
+
+   This creates:
+   - shipment_stage_targets table
+   - Helper functions for managing target dates
+   - Alert tracking system
+
+2. Configure alert email recipients:
+   
+   Insert email addresses into the alert_emails_list table:
+   ```sql
+   INSERT INTO alert_emails_list (emails, added_by)
+   VALUES (
+     'manager@example.com,ops@example.com,logistics@example.com',
+     (SELECT id FROM app_user WHERE email = 'admin@example.com')
+   );
+   ```
+
+================================================================================
+  STEP 2: DEPLOY EDGE FUNCTION
+================================================================================
+
+1. Navigate to your Supabase functions directory:
+   ```bash
+   cd supabase/functions
+   ```
+
+2. The edge function is already created at:
+   supabase/functions/send-stage-target-alerts/index.ts
+
+3. Deploy the function:
+   ```bash
+   supabase functions deploy send-stage-target-alerts
+   ```
+
+4. Set the required environment variables in Supabase Dashboard:
+   - RESEND_API_KEY: Your Resend API key for sending emails
+   - APP_URL: Your application URL (e.g., https://yourapp.com)
+
+   Go to: Supabase Dashboard → Settings → Edge Functions → Environment Variables
+
+================================================================================
+  STEP 3: SETUP SCHEDULED JOB (CRON)
+================================================================================
+
+Option A: Using Supabase Cron (Recommended)
+--------------------------------------------
+
+1. In Supabase Dashboard, go to Database → Cron Jobs
+
+2. Create a new cron job with these settings:
+   - Name: send-stage-target-alerts
+   - Schedule: 0 9 * * * (runs daily at 9:00 AM)
+   - Command:
+     ```sql
+     SELECT net.http_post(
+       url := 'https://your-project-ref.supabase.co/functions/v1/send-stage-target-alerts',
+       headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb,
+       body := '{}'::jsonb
+     ) as request_id;
+     ```
+
+3. Replace:
+   - your-project-ref with your actual Supabase project reference
+   - YOUR_SERVICE_ROLE_KEY with your service role key
+
+Option B: External Cron Service
+--------------------------------
+
+Use services like:
+- GitHub Actions (free)
+- Cron-job.org
+- EasyCron
+
+Example with cURL:
+```bash
+curl -X POST \
+  'https://your-project-ref.supabase.co/functions/v1/send-stage-target-alerts' \
+  -H 'Authorization: Bearer YOUR_SERVICE_ROLE_KEY' \
+  -H 'Content-Type: application/json'
+```
+
+================================================================================
+  STEP 4: UPDATE FRONTEND (shipment-tracker.html)
+================================================================================
+
+1. Add CSS import in the <head> section:
+   ```html
+   <link rel="stylesheet" href="css/stage-target-dates.css">
+   ```
+
+2. The CSS file is located at:
+   css/stage-target-dates.css
+
+================================================================================
+  STEP 5: UPDATE JAVASCRIPT (shipment-tracker.js)
+================================================================================
+
+1. Import the Stage Target Dates module at the top of shipment-tracker.js:
+   ```javascript
+   import { StageTargetDates } from './stage-target-dates.js';
+   ```
+
+2. Initialize the module in the initializeTracker() function:
+   ```javascript
+   // Initialize target dates manager
+   window.stageTargetDatesManager = new StageTargetDates(supabase, shipmentId);
+   await window.stageTargetDatesManager.loadTargetDates();
+   ```
+
+3. Add target dates summary to the sidebar (in initializeTracker function):
+   ```javascript
+   // Render target dates summary
+   const targetSummaryHtml = window.stageTargetDatesManager.renderTargetDatesSummary();
+   const targetSummaryContainer = document.createElement('div');
+   targetSummaryContainer.innerHTML = targetSummaryHtml;
+   document.querySelector('.tracker-sidebar').prepend(targetSummaryContainer);
+   ```
+
+4. Update the populateTimeline() function to show target dates:
+   ```javascript
+   // In the timeline loop, after creating timelineItem
+   const targetDateHtml = window.stageTargetDatesManager.renderTimelineTargetDate(stageKey);
+   if (targetDateHtml) {
+     const targetDateDiv = document.createElement('div');
+     targetDateDiv.innerHTML = targetDateHtml;
+     timelineItem.querySelector('.timeline-content').appendChild(targetDateDiv);
+   }
+   
+   // Add button to set target date
+   const setTargetBtn = document.createElement('button');
+   setTargetBtn.className = 'set-target-btn';
+   setTargetBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> Set Target';
+   setTargetBtn.onclick = (e) => {
+     e.stopPropagation();
+     window.stageTargetDatesManager.openTargetDateModal(stageKey, stage.name);
+   };
+   timelineItem.appendChild(setTargetBtn);
+   ```
+
+5. Add refresh function:
+   ```javascript
+   window.refreshStageTargetDates = async function() {
+     await window.stageTargetDatesManager.loadTargetDates();
+     await initializeTracker(); // Refresh the entire tracker
+   };
+   ```
+
+6. Update circular progress to show target date indicators:
+   ```javascript
+   // In the circular progress rendering loop
+   const targetDate = window.stageTargetDatesManager.getTargetDateForStage(stageKey);
+   if (targetDate) {
+     stageNode.setAttribute('data-has-target', 'true');
+     stageNode.setAttribute('data-target-status', targetDate.status);
+   }
+   ```
+
+================================================================================
+  STEP 6: TESTING
+================================================================================
+
+1. Test Setting Target Dates:
+   - Open a shipment in the tracker
+   - Click "Set Target" button on any stage in the timeline
+   - Set a target date and save
+   - Verify it appears in the UI with correct status
+
+2. Test Alert System Manually:
+   - Call the edge function directly via Supabase Dashboard or curl:
+     ```bash
+     curl -X POST \
+       'https://your-project-ref.supabase.co/functions/v1/send-stage-target-alerts' \
+       -H 'Authorization: Bearer YOUR_ANON_KEY' \
+       -H 'Content-Type: application/json'
+     ```
+
+3. Test Alert Scenarios:
+   - Create a target date 2 days in the future (should trigger 3-day warning)
+   - Create a target date in the past (should trigger overdue warning)
+   - Check that alerts are marked as sent in the database
+
+4. Verify Email Delivery:
+   - Check configured email addresses receive alerts
+   - Verify email formatting and content
+   - Test that alerts are not sent repeatedly
+
+================================================================================
+  CONFIGURATION OPTIONS
+================================================================================
+
+Alert Schedule:
+---------------
+Modify the cron schedule to change when alerts are sent:
+- 0 9 * * * - Daily at 9:00 AM
+- 0 9,15 * * * - Daily at 9:00 AM and 3:00 PM
+- 0 */6 * * * - Every 6 hours
+
+Email Recipients:
+-----------------
+Update the alert_emails_list table to add/remove recipients:
+```sql
+-- Update existing entry
+UPDATE alert_emails_list
+SET emails = 'new@example.com,another@example.com'
+WHERE id = 'your-entry-id';
+
+-- Or insert new entry
+INSERT INTO alert_emails_list (emails, added_by)
+VALUES ('alerts@example.com', (SELECT id FROM app_user LIMIT 1));
+```
+
+================================================================================
+  TROUBLESHOOTING
+================================================================================
+
+Issue: Alerts not being sent
+Solution: 
+- Check edge function logs in Supabase Dashboard
+- Verify RESEND_API_KEY is set correctly
+- Check alert_emails_list table has valid emails
+- Verify cron job is running
+
+Issue: Target dates not showing in UI
+Solution:
+- Check browser console for JavaScript errors
+- Verify CSS file is loaded
+- Ensure stage-target-dates.js is imported correctly
+- Check that stageTargetDatesManager is initialized
+
+Issue: Database errors
+Solution:
+- Verify add_stage_target_dates.sql was run successfully
+- Check that stage enum includes all required stages
+- Verify user has necessary permissions
+
+================================================================================
+  MAINTENANCE
+================================================================================
+
+1. Monitor alert delivery in edge function logs
+2. Periodically review and update email recipients
+3. Archive old target dates for completed shipments
+4. Monitor database table size and add indexes if needed
+
+================================================================================
+  SECURITY CONSIDERATIONS
+================================================================================
+
+1. RLS Policies:
+   - Ensure shipment_stage_targets table has appropriate RLS policies
+   - Only authenticated users should be able to set target dates
+
+2. Edge Function Security:
+   - Service role key should be kept secure
+   - Consider IP whitelisting for cron jobs
+
+3. Email Security:
+   - Verify email addresses before adding to recipient list
+   - Monitor for bounce/spam complaints
+
+================================================================================
+  SUPPORT
+================================================================================
+
+For issues or questions:
+1. Check edge function logs in Supabase Dashboard
+2. Review database function logs
+3. Check browser console for frontend errors
+4. Verify all environment variables are set correctly
+
+================================================================================
+  END OF INTEGRATION GUIDE
+================================================================================

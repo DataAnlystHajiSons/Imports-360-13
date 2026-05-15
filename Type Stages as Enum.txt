@@ -1,0 +1,29 @@
+create type stage as enum (
+'forecast',
+'enlistment_verification',
+'availability_confirmation',
+'purchase_order',
+'proforma',
+'invoice',
+'ip_number',
+'lc_opening',
+'lc_shared_with_supplier',
+'shipment_details_from_supplier',
+'freight_query',
+'award_shipment',
+'non_negotiable_docs',
+'original_docs',
+'bank_endorsement',
+'send_to_clearing_agent',
+'under_clearing_agent',
+'release_orders',
+'gate_out',
+'transportation',
+'warehouse',
+'bills'
+);
+
+
+create type app_role as enum ('admin','imports_ops','finance','supplier','logistics');
+create type transport_mode as enum ('air','sea','road','rail');
+create type status as enum ('active','on_hold','cancelled','completed');

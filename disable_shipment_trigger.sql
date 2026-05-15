@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS on_shipment_inserted ON public.shipment;

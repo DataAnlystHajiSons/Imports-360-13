@@ -1,0 +1,6 @@
+----"Manage Bank Charges"----
+
+rs = rs = usd_amount * rate
+services_charges_per = (services_charges_amount/rs_numeric)*100
+swift_percentage = (swift_amount/rs_numeric)*100
+fed_per = (fed_amount/services_charges_amount)*100

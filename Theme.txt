@@ -1,0 +1,25 @@
+Primary: #FEFEFE (Off-white)
+Secondary: #F1F5F9 (Platinum gray)
+Accent: #7C3AED (Royal purple)
+Text Primary: #1E293B (Dark slate)
+Text Secondary: #64748B (Slate gray)
+Highlight: #8B5CF6 (Light purple)
+
+Tips:
+Backgrounds:
+
+Main content: Primary color
+Cards/panels: Secondary color
+Active states: 5% tint of accent color
+
+Text Hierarchy:
+
+Headers: Text Primary
+Body text: Text Secondary
+Captions: 60% opacity of Text Secondary
+
+Interactive Elements:
+
+Buttons: Accent color with white text
+Links: Accent color
+Hover states: 10% darker than base color

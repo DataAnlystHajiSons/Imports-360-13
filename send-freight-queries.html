@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Imports 360 - Send Freight Queries</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+    .stepper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        position: relative;
+        opacity: 0.5;
+        transition: all 0.3s ease;
+    }
+
+    .step.active {
+        opacity: 1;
+    }
+
+    .step-icon {
+        width: 35px;
+        height: 35px;
+        background: #e2e8f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #64748b;
+        transition: all 0.3s ease;
+    }
+
+    .step.active .step-icon {
+        background: var(--accent-color);
+        color: white;
+        box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
+    }
+
+    .step-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary-color);
+    }
+
+    .step-connector {
+        flex: 0.5;
+        height: 2px;
+        background: #e2e8f0;
+        margin-top: -20px;
+    }
+
+    .send-queries-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .panel {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        display: none;
+    }
+
+    .panel.active {
+        display: block;
+    }
+
+    .panel-header {
+        padding: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+    }
+
+    .panel-header h2 {
+        margin: 0;
+        font-size: 18px;
+        color: var(--text-primary-color);
+    }
+
+    .panel-body {
+        padding: 20px;
+    }
+
+    .shipments-list, .companies-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 15px;
+        max-height: 500px;
+        overflow-y: auto;
+        padding: 5px;
+    }
+
+    .shipment-card, .company-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .shipment-card:hover, .company-card:hover {
+        border-color: var(--accent-color);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transform: translateY(-2px);
+    }
+
+    .shipment-card.selected, .company-card.selected {
+        border-color: var(--accent-color);
+        background-color: rgba(124, 58, 237, 0.05);
+        box-shadow: 0 0 0 2px var(--accent-color);
+    }
+
+    .company-card strong {
+        display: block;
+        font-size: 16px;
+        margin-bottom: 5px;
+        color: var(--text-primary-color);
+    }
+
+    .company-card p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-secondary-color);
+    }
+
+    .summary-panel {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .summary-item {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8fafc;
+        border-radius: 8px;
+    }
+
+    .summary-item h3 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary-color);
+    }
+
+    .button-container {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+        gap: 15px;
+    }
+
+    .shipment-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .shipment-card-header strong {
+        font-size: 16px;
+        color: var(--text-primary-color);
+    }
+
+    .shipment-card-date {
+        font-size: 12px;
+        color: var(--text-secondary-color);
+    }
+
+    .shipment-card-body p {
+        margin: 5px 0;
+        font-size: 14px;
+    }
+
+    .search-container {
+        position: relative;
+        flex: 1;
+        max-width: 300px;
+    }
+
+    .search-container i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+    }
+
+    .search-container input {
+        padding-left: 35px;
+        width: 100%;
+    }
+</style>
+</head>
+<body>
+  <aside class="sidebar">
+     <div class="sidebar-header">
+      <img src="https://i.postimg.cc/j5K3DCyc/20250826-1802-Imports-360-Logo-simple-compose-01k3k7grx1f2fsmtvdcvwbx54s.png" alt="Logo" class="sidebar-logo">
+      <button class="sidebar-toggle">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul>
+        <li>
+          <a href="admin-dashboard.html" class="nav-link">
+            <i class="fas fa-home icon"></i>
+            <span class="text">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link has-submenu">
+            <i class="fas fa-file-alt icon"></i>
+            <span class="text">Documents</span>
+            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+          </a>
+          <ul class="submenu">
+            <li><a href="documents.html" class="nav-link"><span class="text">Document Management</span></a></li>
+            <li><a href="admin-document-requirements.html" class="nav-link"><span class="text">Document Requirements</span></a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="forecast.html" class="nav-link">
+            <i class="fas fa-bullhorn icon"></i>
+            <span class="text">Forecasts</span>
+          </a>
+        </li>
+        <li><a href="verification-list.html" class="nav-link"><i class="fas fa-check-double icon"></i><span class="text">Verification List</span></a></li>
+        <li>
+          <a href="#" class="nav-link has-submenu">
+            <i class="fas fa-box icon"></i>
+            <span class="text">Shipments</span>
+            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+          </a>
+          <ul class="submenu">
+            <li><a href="shipment_tracker.html" class="nav-link"><span class="text">Shipment Tracker</span></a></li>
+            <li><a href="shipment-details.html" class="nav-link"><span class="text">All Shipments</span></a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="product-details.html" class="nav-link">
+            <i class="fas fa-tags icon"></i>
+            <span class="text">Products</span>
+          </a>
+        </li>
+        <li>
+          <a href="supplier-details.html" class="nav-link">
+            <i class="fas fa-truck icon"></i>
+            <span class="text">Suppliers</span>
+          </a>
+        </li>
+        <li>
+          <a href="supplier-shipment-responses.html" class="nav-link">
+            <i class="fas fa-inbox icon"></i>
+            <span class="text">Supplier Responses</span>
+          </a>
+        </li>
+        <li>
+          <a href="bank-details.html" class="nav-link">
+            <i class="fas fa-university icon"></i>
+            <span class="text">Banks</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="clearing-agent-details.html" class="nav-link">
+            <i class="fas fa-user-shield icon"></i>
+            <span class="text">Clearing Agents</span>
+          </a>
+        </li>
+        <li>
+          <a href="warehouse-details.html" class="nav-link">
+            <i class="fas fa-warehouse icon"></i>
+            <span class="text">Warehouses</span>
+          </a>
+        </li>
+        <li><a href="logistic-cells.html" class="nav-link"><i class="fas fa-cubes icon"></i><span class="text">Logistic Cells</span></a></li>
+        <li>
+          <a href="#" class="nav-link has-submenu open">
+            <i class="fas fa-truck-ramp-box icon"></i>
+            <span class="text">Freight</span>
+            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+          </a>
+          <ul class="submenu open">
+            <li><a href="send-freight-queries.html" class="nav-link active"><span class="text">Send Freight Queries</span></a></li>
+            <li><a href="freight-query-response.html" class="nav-link"><span class="text">Freight Query Response</span></a></li>
+            <li><a href="manage-freight-queries.html" class="nav-link"><span class="text">Manage Freight Queries</span></a></li>
+            <li><a href="award-shipment.html" class="nav-link"><span class="text">Award Shipment</span></a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="main-content">
+    <header class="main-header">
+      <div class="header-title">
+        <button class="back-button" onclick="window.history.back();"><i class="fas fa-arrow-left"></i></button>
+        <h1>Send Freight Queries</h1>
+      </div>
+    </header>
+    
+    <div class="stepper">
+      <div class="step active" data-step="1">
+        <div class="step-icon">1</div>
+        <div class="step-label">Select Shipment</div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step" data-step="2">
+        <div class="step-icon">2</div>
+        <div class="step-label">Select Companies</div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step" data-step="3">
+        <div class="step-icon">3</div>
+        <div class="step-label">Send Queries</div>
+      </div>
+    </div>
+
+    <div id="message" class="message-container"></div>
+
+    <div class="send-queries-container">
+      <!-- Step 1: Shipment Selection -->
+      <div class="panel active" id="shipment-panel">
+        <div class="panel-header">
+          <h2>1. Select a Shipment</h2>
+          <div class="search-container">
+            <i class="fas fa-search"></i>
+            <input type="text" id="shipment-search" placeholder="Search shipments...">
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="shipments-list" class="shipments-list">
+            <p>Loading shipments...</p>
+          </div>
+          <div class="button-container" style="justify-content: flex-end;">
+            <button id="step1-next-btn" class="button" disabled>Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Company Selection -->
+      <div class="panel" id="company-panel">
+        <div class="panel-header">
+          <h2>2. Select Logistics Companies</h2>
+          <button id="select-all-btn" class="button-secondary">Select All</button>
+        </div>
+        <div class="panel-body">
+          <div id="logistics-companies-list" class="companies-list">
+            <p>Loading companies...</p>
+          </div>
+          <div class="button-container">
+            <button id="step2-back-btn" class="button-secondary">Back</button>
+            <button id="step2-next-btn" class="button" disabled>Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Summary & Send -->
+      <div class="panel" id="summary-panel">
+        <div class="panel-header">
+          <h2>3. Review & Send</h2>
+        </div>
+        <div class="panel-body">
+          <div class="summary-panel">
+            <div class="summary-item">
+              <h3>Selected Shipment</h3>
+              <div id="summary-shipment">
+                <p>No shipment selected.</p>
+              </div>
+            </div>
+            <div class="summary-item">
+              <h3>Selected Companies</h3>
+              <div id="summary-companies">
+                <p>No companies selected.</p>
+              </div>
+            </div>
+            <div class="button-container">
+              <button id="step3-back-btn" class="button-secondary">Back</button>
+              <button id="send-queries-btn" class="button" disabled>Send Queries</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.4";
+  const supabase = createClient("https://sfknzqkiqxivzcualcau.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNma256cWtpcXhpdnpjdWFsY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3OTU0ODksImV4cCI6MjA3MjM3MTQ4OX0.JKjOS9NRdbVH1UanfqmBeHmMSnlWlZtDr-5LdKw5YaA");
+
+  let allShipments = [];
+  let allCompanies = [];
+  let selectedShipmentId = null;
+  let selectedCompanyIds = new Set();
+  let currentStep = 1;
+
+  function goToStep(step) {
+    currentStep = step;
+    document.querySelectorAll('.step').forEach(stepEl => {
+      stepEl.classList.toggle('active', parseInt(stepEl.dataset.step) === currentStep);
+    });
+
+    document.getElementById('shipment-panel').classList.toggle('active', currentStep === 1);
+    document.getElementById('company-panel').classList.toggle('active', currentStep === 2);
+    document.getElementById('summary-panel').classList.toggle('active', currentStep === 3);
+    
+    window.scrollTo(0, 0);
+  }
+
+  function showMessage(message, isError = false) {
+    const messageDiv = document.getElementById('message');
+    messageDiv.innerHTML = `<p class="${isError ? 'error-message' : 'success-message'}">${message}</p>`;
+    window.scrollTo(0, 0);
+  }
+
+  function renderShipments(shipments) {
+    const shipmentsListDiv = document.getElementById('shipments-list');
+    if (shipments.length === 0) {
+      shipmentsListDiv.innerHTML = '<p>No shipments found.</p>';
+      return;
+    }
+    shipmentsListDiv.innerHTML = '';
+    shipments.forEach(s => {
+      const card = document.createElement('div');
+      card.className = `shipment-card ${s.id === selectedShipmentId ? 'selected' : ''}`;
+      card.dataset.id = s.id;
+      card.innerHTML = `
+        <div class="shipment-card-header">
+          <strong>${s.reference_code}</strong>
+          <span class="shipment-card-date">${new Date(s.created_at).toLocaleDateString()}</span>
+        </div>
+        <div class="shipment-card-body">
+          <p><strong>Product:</strong> ${s.product_name || 'N/A'} - ${s.variety_name || 'N/A'}</p>
+          <p><strong>Stage:</strong> ${s.current_stage}</p>
+        </div>
+      `;
+      card.addEventListener('click', () => selectShipment(s.id));
+      shipmentsListDiv.appendChild(card);
+    });
+  }
+
+  function renderCompanies(companies) {
+    const companiesListDiv = document.getElementById('logistics-companies-list');
+    if (companies.length === 0) {
+      companiesListDiv.innerHTML = '<p>No companies found.</p>';
+      return;
+    }
+    companiesListDiv.innerHTML = '';
+    companies.forEach(c => {
+      const card = document.createElement('div');
+      card.className = `company-card ${selectedCompanyIds.has(c.id) ? 'selected' : ''}`;
+      card.dataset.id = c.id;
+      card.innerHTML = `
+        <strong>${c.name}</strong>
+        <p>${c.contact_email || 'No email'}</p>
+      `;
+      card.addEventListener('click', () => toggleCompanySelection(c.id));
+      companiesListDiv.appendChild(card);
+    });
+  }
+
+  async function loadPageData() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const { data: shipments, error: shipmentError } = await supabase
+      .from('v_shipments_with_all_details')
+      .select('id, reference_code, product_name, variety_name, created_at, current_stage')
+      .order('created_at', { ascending: false });
+
+    if (shipmentError) {
+      console.error(shipmentError);
+      showMessage("Error loading shipments: " + shipmentError.message, true);
+    } else {
+      allShipments = shipments;
+      renderShipments(allShipments);
+    }
+
+    const { data: companies, error: companyError } = await supabase
+      .from('logistics_company')
+      .select('id, name, contact_email')
+      .order('name');
+
+    if (companyError) {
+      console.error(companyError);
+      showMessage("Error loading companies: " + companyError.message, true);
+    } else {
+      allCompanies = companies;
+      renderCompanies(allCompanies);
+    }
+  }
+
+  function selectShipment(shipmentId) {
+    selectedShipmentId = shipmentId;
+    document.querySelectorAll('.shipment-card').forEach(card => {
+      card.classList.toggle('selected', card.dataset.id === shipmentId);
+    });
+    document.getElementById('step1-next-btn').disabled = false;
+    updateSummary();
+    // Auto advance to step 2
+    goToStep(2);
+  }
+
+  function toggleCompanySelection(companyId) {
+    const card = document.querySelector(`.company-card[data-id="${companyId}"]`);
+    if (selectedCompanyIds.has(companyId)) {
+      selectedCompanyIds.delete(companyId);
+      if (card) card.classList.remove('selected');
+    } else {
+      selectedCompanyIds.add(companyId);
+      if (card) card.classList.add('selected');
+    }
+    document.getElementById('step2-next-btn').disabled = selectedCompanyIds.size === 0;
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const shipmentSummaryDiv = document.getElementById('summary-shipment');
+    if (selectedShipmentId) {
+      const shipment = allShipments.find(s => s.id === selectedShipmentId);
+      shipmentSummaryDiv.innerHTML = `
+        <div class="shipment-info">
+            <strong>${shipment.reference_code}</strong>
+            <p>${shipment.product_name || 'N/A'} - ${shipment.variety_name || 'N/A'}</p>
+        </div>
+      `;
+    } else {
+      shipmentSummaryDiv.innerHTML = '<p>No shipment selected.</p>';
+    }
+
+    const companySummaryDiv = document.getElementById('summary-companies');
+    if (selectedCompanyIds.size > 0) {
+        const selectedNames = allCompanies
+            .filter(c => selectedCompanyIds.has(c.id))
+            .map(c => c.name);
+        companySummaryDiv.innerHTML = `<p>${selectedCompanyIds.size} companies selected: ${selectedNames.join(', ')}</p>`;
+    } else {
+        companySummaryDiv.innerHTML = '<p>No companies selected.</p>';
+    }
+
+    document.getElementById('send-queries-btn').disabled = !selectedShipmentId || selectedCompanyIds.size === 0;
+  }
+
+  async function sendQueries() {
+    const sendButton = document.getElementById('send-queries-btn');
+    const originalText = sendButton.innerHTML;
+    sendButton.disabled = true;
+    sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+    try {
+        const queriesToInsert = Array.from(selectedCompanyIds).map(companyId => ({
+          shipment_id: selectedShipmentId,
+          logistics_company_id: companyId,
+        }));
+
+        const { data: newQueries, error } = await supabase
+          .from('freight_query')
+          .insert(queriesToInsert)
+          .select();
+
+        if (error) throw error;
+
+        const emailPromises = newQueries.map(newQuery => {
+          const company = allCompanies.find(c => c.id === newQuery.logistics_company_id);
+          if (company && company.contact_email) {
+            const quoteUrl = `${window.location.origin}/quote-submission.html?freight_query_id=${newQuery.id}`;
+            return supabase.functions.invoke('send-freight-query-email', {
+              body: { 
+                email: company.contact_email,
+                quote_url: quoteUrl
+              }
+            }).then(({ error }) => {
+              if (error) throw error;
+              return { companyName: company.name, success: true };
+            });
+          }
+          return Promise.resolve({ companyName: company ? company.name : 'Unknown', success: false, error: 'No contact email' });
+        });
+
+        const results = await Promise.allSettled(emailPromises);
+
+        let successCount = 0;
+        let failCount = 0;
+        
+        results.forEach(result => {
+          if (result.status === 'fulfilled' && result.value.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        });
+
+        if (failCount === 0) {
+            showMessage(`Successfully sent ${successCount} freight queries!`);
+        } else {
+            showMessage(`Sent ${successCount} queries, but ${failCount} emails failed. Check console for details.`, true);
+        }
+    } catch (err) {
+        console.error(err);
+        showMessage("Error sending queries: " + err.message, true);
+    } finally {
+        sendButton.disabled = false;
+        sendButton.innerHTML = originalText;
+    }
+  }
+
+  window.onload = () => {
+    loadPageData();
+
+    document.getElementById('shipment-search').addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const filteredShipments = allShipments.filter(s => 
+        s.reference_code.toLowerCase().includes(searchTerm) || 
+        (s.product_name && s.product_name.toLowerCase().includes(searchTerm))
+      );
+      renderShipments(filteredShipments);
+    });
+
+    document.getElementById('select-all-btn').addEventListener('click', () => {
+      const allCompanyIds = allCompanies.map(c => c.id);
+      const allCurrentlySelected = allCompanyIds.every(id => selectedCompanyIds.has(id));
+      
+      if (allCurrentlySelected) {
+        selectedCompanyIds.clear();
+      } else {
+        allCompanyIds.forEach(id => selectedCompanyIds.add(id));
+      }
+
+      renderCompanies(allCompanies);
+      document.getElementById('step2-next-btn').disabled = selectedCompanyIds.size === 0;
+      updateSummary();
+    });
+
+    document.getElementById('send-queries-btn').addEventListener('click', sendQueries);
+    
+    document.getElementById('step1-next-btn').addEventListener('click', () => goToStep(2));
+    document.getElementById('step2-back-btn').addEventListener('click', () => goToStep(1));
+    document.getElementById('step2-next-btn').addEventListener('click', () => goToStep(3));
+    document.getElementById('step3-back-btn').addEventListener('click', () => goToStep(2));
+
+    goToStep(1);
+  };
+
+</script>
+
+
+<script>
+  // Sidebar functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarToggle = document.querySelector('.sidebar-toggle');
+    const hasSubmenus = document.querySelectorAll('.has-submenu');
+
+    sidebarToggle?.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+    });
+
+    hasSubmenus.forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.has-submenu') === item) {
+          e.preventDefault();
+          const submenu = item.nextElementSibling;
+          if (submenu && submenu.classList.contains('submenu')) {
+            submenu.classList.toggle('open');
+            item.classList.toggle('open');
+          }
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>

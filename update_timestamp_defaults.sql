@@ -1,0 +1,10 @@
+ALTER TABLE public.alert_emails_list ALTER COLUMN added_at SET DEFAULT now();
+ALTER TABLE public.availability_confirmation ALTER COLUMN confirmed_at SET DEFAULT now();
+ALTER TABLE public.bank_endorsement ALTER COLUMN endorsed_at SET DEFAULT now();
+ALTER TABLE public.enlistment_verification ALTER COLUMN verified_at SET DEFAULT now();
+ALTER TABLE public.gate_out ALTER COLUMN updated_at SET DEFAULT now();
+ALTER TABLE public.non_negotiable_docs ALTER COLUMN sended_at SET DEFAULT now();
+ALTER TABLE public.original_docs ALTER COLUMN received_at SET DEFAULT now();
+ALTER TABLE public.shipment_awarded ALTER COLUMN awarded_at SET DEFAULT now();
+ALTER TABLE public.transporter ALTER COLUMN updated_at SET DEFAULT now();
+ALTER TABLE public.warehouse_arrival ALTER COLUMN updated_at SET DEFAULT now();

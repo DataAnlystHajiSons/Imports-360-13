@@ -1,0 +1,74 @@
+DROP VIEW IF EXISTS v_shipment_stage_checklist;
+
+create or replace view v_shipment_stage_checklist as
+select
+  s.id as shipment_id,
+  s.reference_code,
+  s.current_stage,
+  -- Forecast
+  (SELECT EXISTS (SELECT 1 FROM forecast f WHERE f.product_variety_id = s.product_variety_id)) as forecast_done,
+  -- Enlistment Verification
+  bool_or(ev.verification_doc_url is not null and ev.verified = true) as enlistment_verification_done,
+  -- Availability
+  bool_or(ac.available = true) as availability_confirmation_done,
+  -- Purchase Order
+  bool_or(po.po_file_url is not null) as purchase_order_done,
+  -- Proforma
+  bool_or(pi.file_url is not null) as proforma_done,
+  -- Invoice
+  bool_or(ci.file_url is not null) as invoice_done,
+  -- IP Number
+  bool_or(ip.file_url is not null and ip.ip_reference is not null) as ip_number_done,
+  -- LC Opening (manual)
+  bool_or(lc.file_url is not null) as lc_opening_done,
+  -- LC Shared (manual)
+  bool_or(lcs.id is not null) as lc_shared_with_supplier_done,
+  -- Supplier Details (manual)
+  bool_or(ssd.id is not null) as shipment_details_from_supplier_done,
+  -- Freight Query (manual)
+  bool_or(fq.id is not null) as freight_query_done,
+  -- Award Shipment
+  bool_or(sa.awarded = true) as award_shipment_done,
+  -- Non Negotiable Docs
+  bool_or(nnd.docs_url is not null) as non_negotiable_docs_done,
+  -- Original Docs
+  bool_or(od.docs_url is not null) as original_docs_done,
+  -- Bank Endorsement
+  bool_or(be.endorsed = true) as bank_endorsement_done,
+  -- Send to Clearing Agent
+  bool_or(dtca.slip_picture_url is not null) as send_to_clearing_agent_done,
+  -- Under Clearing Agent
+  bool_or(uca.is_received = true) as under_clearing_agent_done,
+  -- Release Orders
+  bool_or(ro.dpp_ro_number is not null and ro.fscrd_ro_number is not null) as release_orders_done,
+  -- Gate out
+  bool_or(go.is_gate_out = true) as gate_out_done,
+  -- Transportation
+  bool_or(t.bilti_number is not null) as transportation_done,
+  -- Warehouse
+  bool_or(wa.gr_no is not null) as warehouse_done,
+  -- Bills
+  bool_or(b.costing is not null) as bills_done
+from shipment s
+left join enlistment_verification ev on ev.shipment_id = s.id
+left join availability_confirmation ac on ac.shipment_id = s.id
+left join purchase_order po on po.shipment_id = s.id
+left join proforma_invoice pi on pi.shipment_id = s.id
+left join commercial_invoice ci on ci.shipment_id = s.id
+left join ip_number ip on ip.shipment_id = s.id
+left join letter_of_credit lc on lc.shipment_id = s.id
+left join lc_share lcs on lcs.shipment_id = s.id
+left join supplier_shipment_details ssd on ssd.shipment_id = s.id
+left join freight_query fq on fq.shipment_id = s.id
+left join shipment_awarded sa on sa.shipment_id = s.id
+left join non_negotiable_docs nnd on nnd.shipment_id = s.id
+left join original_docs od on od.shipment_id = s.id
+left join bank_endorsement be on be.shipment_id = s.id
+left join docs_to_clearing_agent dtca on dtca.shipment_id = s.id
+left join under_clearing_agent uca on uca.shipment_id = s.id
+left join release_orders ro on ro.shipment_id = s.id
+left join gate_out go on go.shipment_id = s.id
+left join transporter t on t.shipment_id = s.id
+left join warehouse_arrival wa on wa.shipment_id = s.id
+left join bills b on b.shipment_id = s.id
+group by s.id, s.reference_code, s.current_stage;

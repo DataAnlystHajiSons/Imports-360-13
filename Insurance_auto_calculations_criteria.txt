@@ -1,0 +1,10 @@
+----Insurance----
+
+amount = value*rate
+ten_perc = amount*10%
+total_value = sum(amount,ten_perc)
+marine_amount = total_value*marine_perc %
+war_amount = total_value*war_perc %
+fif_amount = sum((marine_amount+war_amount),asc_1)*fif_perc
+sts_amount = sum((marine_amount+war_amount),asc_1)*sts_perc
+grand_total = sum((marine_amount+war_amount),asc_1) + fif_amount + sts_amount +stamp 

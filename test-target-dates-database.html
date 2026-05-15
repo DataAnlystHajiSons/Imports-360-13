@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Target Dates Database</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f9f9f9;
+      border-left: 4px solid #667eea;
+    }
+    .success {
+      color: #10b981;
+      font-weight: bold;
+    }
+    .error {
+      color: #ef4444;
+      font-weight: bold;
+    }
+    .info {
+      color: #3b82f6;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5a67d8;
+    }
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    #results {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>🧪 Stage Target Dates - Database Diagnostic Tool</h1>
+    
+    <div class="test-section">
+      <h2>Test 1: Check if Database Functions Exist</h2>
+      <button onclick="testFunctionsExist()">Run Test</button>
+      <div id="test1-result"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 2: Check if Table Exists</h2>
+      <button onclick="testTableExists()">Run Test</button>
+      <div id="test2-result"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 3: Try to Create a Test Target Date</h2>
+      <input type="text" id="test-shipment-id" placeholder="Enter Shipment ID" style="padding: 8px; margin-right: 10px; width: 300px;">
+      <button onclick="testCreateTarget()">Create Test Target</button>
+      <div id="test3-result"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 4: Query Existing Target Dates</h2>
+      <input type="text" id="query-shipment-id" placeholder="Enter Shipment ID" style="padding: 8px; margin-right: 10px; width: 300px;">
+      <button onclick="testQueryTargets()">Query Targets</button>
+      <div id="test4-result"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 5: Direct Table Query</h2>
+      <button onclick="testDirectQuery()">Run Direct Query</button>
+      <div id="test5-result"></div>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/+esm";
+    
+    const supabase = createClient(
+      "https://sfknzqkiqxivzcualcau.supabase.co", 
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNma256cWtpcXhpdnpjdWFsY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3OTU0ODksImV4cCI6MjA3MjM3MTQ4OX0.JKjOS9NRdbVH1UanfqmBeHmMSnlWlZtDr-5LdKw5YaA"
+    );
+
+    window.supabase = supabase;
+
+    window.testFunctionsExist = async function() {
+      const result = document.getElementById('test1-result');
+      result.innerHTML = '<p class="info">Testing...</p>';
+
+      try {
+        // Try to call get_shipments_needing_alerts (it should return empty array if no alerts)
+        const { data, error } = await supabase.rpc('get_shipments_needing_alerts');
+        
+        if (error) {
+          if (error.message.includes('function') && error.message.includes('does not exist')) {
+            result.innerHTML = `
+              <p class="error">❌ FAILED: Database functions do not exist!</p>
+              <p>You need to run the SQL script: <code>add_stage_target_dates.sql</code></p>
+              <p>Error: ${error.message}</p>
+            `;
+          } else {
+            result.innerHTML = `
+              <p class="error">❌ Error calling function: ${error.message}</p>
+            `;
+          }
+        } else {
+          result.innerHTML = `
+            <p class="success">✅ SUCCESS: Database functions exist!</p>
+            <p>Found ${data?.length || 0} shipments needing alerts</p>
+          `;
+        }
+      } catch (error) {
+        result.innerHTML = `<p class="error">❌ Exception: ${error.message}</p>`;
+      }
+    };
+
+    window.testTableExists = async function() {
+      const result = document.getElementById('test2-result');
+      result.innerHTML = '<p class="info">Testing...</p>';
+
+      try {
+        const { data, error, count } = await supabase
+          .from('shipment_stage_targets')
+          .select('*', { count: 'exact', head: true });
+        
+        if (error) {
+          if (error.message.includes('relation') && error.message.includes('does not exist')) {
+            result.innerHTML = `
+              <p class="error">❌ FAILED: Table 'shipment_stage_targets' does not exist!</p>
+              <p>You need to run the SQL script: <code>add_stage_target_dates.sql</code></p>
+            `;
+          } else {
+            result.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+          }
+        } else {
+          result.innerHTML = `
+            <p class="success">✅ SUCCESS: Table exists!</p>
+            <p>Total target dates in database: ${count || 0}</p>
+          `;
+        }
+      } catch (error) {
+        result.innerHTML = `<p class="error">❌ Exception: ${error.message}</p>`;
+      }
+    };
+
+    window.testCreateTarget = async function() {
+      const result = document.getElementById('test3-result');
+      const shipmentId = document.getElementById('test-shipment-id').value;
+
+      if (!shipmentId) {
+        result.innerHTML = '<p class="error">Please enter a Shipment ID</p>';
+        return;
+      }
+
+      result.innerHTML = '<p class="info">Creating test target...</p>';
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const targetDate = tomorrow.toISOString().split('T')[0];
+
+        const { data, error } = await supabase.rpc('set_stage_target_date', {
+          p_shipment_id: shipmentId,
+          p_stage_name: 'forecast',
+          p_target_date: targetDate,
+          p_notes: 'Test target created by diagnostic tool',
+          p_user_id: user?.id
+        });
+
+        if (error) {
+          result.innerHTML = `
+            <p class="error">❌ FAILED to create target</p>
+            <p>Error: ${error.message}</p>
+            <pre>${JSON.stringify(error, null, 2)}</pre>
+          `;
+        } else {
+          result.innerHTML = `
+            <p class="success">✅ SUCCESS: Test target created!</p>
+            <p>Target ID: ${data}</p>
+            <p>Shipment: ${shipmentId}</p>
+            <p>Stage: forecast</p>
+            <p>Date: ${targetDate}</p>
+          `;
+        }
+      } catch (error) {
+        result.innerHTML = `<p class="error">❌ Exception: ${error.message}</p>`;
+      }
+    };
+
+    window.testQueryTargets = async function() {
+      const result = document.getElementById('test4-result');
+      const shipmentId = document.getElementById('query-shipment-id').value;
+
+      if (!shipmentId) {
+        result.innerHTML = '<p class="error">Please enter a Shipment ID</p>';
+        return;
+      }
+
+      result.innerHTML = '<p class="info">Querying targets...</p>';
+
+      try {
+        const { data, error } = await supabase.rpc('get_shipment_stage_targets', {
+          p_shipment_id: shipmentId
+        });
+
+        if (error) {
+          result.innerHTML = `
+            <p class="error">❌ FAILED to query targets</p>
+            <p>Error: ${error.message}</p>
+          `;
+        } else {
+          result.innerHTML = `
+            <p class="success">✅ SUCCESS: Found ${data?.length || 0} target(s)</p>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        }
+      } catch (error) {
+        result.innerHTML = `<p class="error">❌ Exception: ${error.message}</p>`;
+      }
+    };
+
+    window.testDirectQuery = async function() {
+      const result = document.getElementById('test5-result');
+      result.innerHTML = '<p class="info">Running direct query...</p>';
+
+      try {
+        const { data, error } = await supabase
+          .from('shipment_stage_targets')
+          .select('*')
+          .limit(10);
+
+        if (error) {
+          result.innerHTML = `
+            <p class="error">❌ FAILED</p>
+            <p>Error: ${error.message}</p>
+          `;
+        } else {
+          result.innerHTML = `
+            <p class="success">✅ SUCCESS: Found ${data?.length || 0} target(s) in database</p>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          `;
+        }
+      } catch (error) {
+        result.innerHTML = `<p class="error">❌ Exception: ${error.message}</p>`;
+      }
+    };
+
+    console.log('🧪 Diagnostic tool loaded. Supabase client ready.');
+  </script>
+</body>
+</html>

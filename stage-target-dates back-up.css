@@ -1,0 +1,383 @@
+/* ============================================================================
+   Stage Target Dates Styling
+   ============================================================================ */
+
+/* Target Date Badges */
+.target-date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.target-date-badge i {
+  font-size: 11px;
+}
+
+.status-overdue {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.status-warning {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.status-on-track {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+/* Timeline Target Date Display */
+.timeline-target-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  margin-top: 5px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.timeline-target-date i {
+  font-size: 11px;
+}
+
+.target-overdue {
+  background: #fee2e2;
+  color: #991b1b;
+  border-left: 3px solid #ef4444;
+}
+
+.target-warning {
+  background: #fef3c7;
+  color: #92400e;
+  border-left: 3px solid #f59e0b;
+}
+
+.target-on-track {
+  background: #d1fae5;
+  color: #065f46;
+  border-left: 3px solid #10b981;
+}
+
+/* Target Dates Summary Panel */
+.target-dates-summary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.target-dates-summary h4 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.target-dates-summary.empty {
+  background: #f3f4f6;
+  color: #6b7280;
+  text-align: center;
+  padding: 15px;
+  border: 2px dashed #d1d5db;
+}
+
+.target-dates-summary.empty p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.target-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+}
+
+.target-stat {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.target-stat:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.target-stat i {
+  font-size: 20px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.target-stat.overdue i {
+  color: #fca5a5;
+}
+
+.target-stat.warning i {
+  color: #fcd34d;
+}
+
+.target-stat.on-track i {
+  color: #6ee7b7;
+}
+
+.target-stat .stat-value {
+  display: block;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.target-stat .stat-label {
+  display: block;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+/* Target Date Button in Timeline */
+.timeline-item {
+  position: relative;
+}
+
+.timeline-item:hover .set-target-btn {
+  opacity: 1;
+  visibility: visible;
+}
+
+.set-target-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.set-target-btn:hover {
+  background: #5a67d8;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.set-target-btn i {
+  font-size: 10px;
+}
+
+/* Button style when stage HAS a target date */
+.set-target-btn.has-target {
+  background: #10b981;
+  opacity: 1;
+  visibility: visible;
+}
+
+.set-target-btn.has-target:hover {
+  background: #059669;
+}
+
+/* Add small indicator badge to timeline items WITH target dates */
+.timeline-item:has(.timeline-target-date) .timeline-icon::after {
+  content: '📅';
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  font-size: 14px;
+  background: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Show button always on mobile */
+@media (max-width: 768px) {
+  .set-target-btn {
+    opacity: 1;
+    visibility: visible;
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+    margin-top: 8px;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Target Date Modal Specific Styles */
+#target-date-modal .modal-content {
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#target-date-modal .form-field {
+  margin-bottom: 16px;
+}
+
+#target-date-modal .form-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+#target-date-modal .form-field input[type="date"],
+#target-date-modal .form-field textarea {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+#target-date-modal .form-field input[type="date"]:focus,
+#target-date-modal .form-field textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#target-date-modal .field-hint {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+#target-date-modal .button-container {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#target-date-modal .button {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Circular Progress Target Date Indicator */
+.stage-node[data-has-target="true"]::after {
+  content: '📅';
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  border: 2px solid #667eea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.stage-node[data-target-status="overdue"]::after {
+  border-color: #ef4444;
+  animation: pulse 1.5s infinite;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.stage-node[data-target-status="warning"]::after {
+  border-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.stage-node[data-target-status="on_track"]::after {
+  border-color: #10b981;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .target-dates-summary {
+    padding: 15px;
+  }
+
+  .target-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .target-stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .target-stat i {
+    font-size: 24px;
+    margin-bottom: 0;
+    margin-right: 12px;
+  }
+
+  .target-stat .stat-value {
+    font-size: 20px;
+    margin-bottom: 0;
+  }
+
+  #target-date-modal .button-container {
+    flex-direction: column;
+  }
+
+  #target-date-modal .button {
+    width: 100%;
+  }
+}

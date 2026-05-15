@@ -1,0 +1,20 @@
+[functions.send-sowing-alerts]
+enabled = true
+verify_jwt = true
+import_map = "./functions/send-sowing-alerts/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/send-sowing-alerts/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/send-sowing-alerts/*.html" ]
+
+[functions.send-freight-query-email]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-freight-query-email/index.ts"
+
+[functions.send-supplier-docs]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/send-supplier-docs/index.ts"

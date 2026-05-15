@@ -1,0 +1,19 @@
+----FBR Duty----
+
+total_after_insurance = invoice_amount + insurance_fix
+landing_charges_amount = landing_charges_rate * total_after_insurance
+total_invoice = total_after_insurance + landing_charges_amount
+access_value = total_invoice * usd_rate
+custom_duty_amount = access_value * custom_duty_rate
+additional_custom_duty_amount = access_value * additional_custom_duty_rate
+regulatory_duty_amount = access_value * regulatory_duty_rate
+value_for_sales_tax = access_value +custom_duty_amount + additional_custom_duty_amount + regulatory_duty_amount 
+sales_tax_amount = value_for_sales_tax * sales_tax_rate
+additional_sales_tax_amount = value_for_sales_tax * additional_sales_tax_rate
+value_for_income_tax = value_for_sales_tax + sales_tax_amount + additional_sales_tax_amount 
+income_tax_amount = value_for_income_tax * income_tax_rate
+custom = custom_duty_amount + additional_custom_duty_amount + regulatory_duty_amount + value_for_sales_tax + sales_tax_amount + additional_sales_tax_amount + value_for_income_tax + income_tax_amount 
+excise_on_a_value_amount = access_value * excise_on_a_value_rate
+total_duties = custom + excise_on_a_value_amount + l_single_declaration_amount + m_release_order_amount + n_stamp_duty_amount
+difference = total_duties - as_per_psid
+

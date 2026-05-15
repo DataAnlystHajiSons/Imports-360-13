@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Supabase
+supabase/.temp/
+
+# Logs
+*.log
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.swp
+
+# Editor directories and files
+.vscode*
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Images
+API Keys.jpg
+EmailJS Template Test Screenshot for Alert.jpg
+EmailJS Template Test Screenshot.jpg
+Error.jpg
+
+# Other
+.DS_Store
