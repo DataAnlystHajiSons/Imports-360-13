@@ -393,6 +393,27 @@
               <label style="font-weight: 600; margin-bottom: 8px;">Origin <span style="color: #DC2626;">*</span></label>
               <input type="text" id="cargo-origin" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
             </div>
+            <div class="form-group" style="display: flex; flex-direction: column;">
+              <label style="font-weight: 600; margin-bottom: 8px;">Term <span style="color: #DC2626;">*</span></label>
+              <select id="cargo-term" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                <option value="EXW">EXW</option>
+                <option value="FOB">FOB</option>
+                <option value="CFR">CFR</option>
+                <option value="CIF">CIF</option>
+                <option value="DDP">DDP</option>
+                <option value="DAP">DAP</option>
+                <option value="CPT">CPT</option>
+                <option value="CIP">CIP</option>
+              </select>
+            </div>
+            <div class="form-group" style="display: flex; flex-direction: column;">
+              <label style="font-weight: 600; margin-bottom: 8px;">Readiness Date <span style="color: #DC2626;">*</span></label>
+              <input type="date" id="cargo-readiness-date" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+            </div>
+            <div class="form-group" style="display: flex; flex-direction: column; grid-column: span 2;">
+              <label style="font-weight: 600; margin-bottom: 8px;">Pick-up Address <span style="color: #DC2626;">*</span></label>
+              <input type="text" id="cargo-pickup-address" placeholder="Full address for pick-up" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+            </div>
           </div>
 
           <!-- Dynamic Fields container based on Type -->
@@ -623,6 +644,10 @@
       html = `
         <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
           <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Number of Cartons <span style="color: #DC2626;">*</span></label>
+            <input type="number" id="cargo-no-of-cartoons" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
             <label style="font-weight: 600; margin-bottom: 8px;">Net Weight (kg) <span style="color: #DC2626;">*</span></label>
             <input type="number" id="cargo-net-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
           </div>
@@ -675,19 +700,23 @@
     const shipmentFrom = document.getElementById('cargo-shipment-from').value;
     const destination = document.getElementById('cargo-destination').value;
     const origin = document.getElementById('cargo-origin').value;
+    const term = document.getElementById('cargo-term').value;
+    const readinessDate = document.getElementById('cargo-readiness-date').value;
+    const pickupAddress = document.getElementById('cargo-pickup-address').value;
 
-    if (!shipmentFrom || !destination || !origin) {
-        showMessage('Shipment From, Destination Port, and Origin are required.', true);
+    if (!shipmentFrom || !destination || !origin || !term || !readinessDate || !pickupAddress) {
+        showMessage('Shipment From, Destination Port, Origin, Term, Readiness Date, and Pick-up Address are required.', true);
         return false;
     }
 
     if (type === 'Cartons') {
+        const noOfCartoons = document.getElementById('cargo-no-of-cartoons').value;
         const netWeight = document.getElementById('cargo-net-weight').value;
         const grossWeight = document.getElementById('cargo-gross-weight').value;
         const dimension = document.getElementById('cargo-dimension').value;
         const cbm = document.getElementById('cargo-cbm').value;
-        if (!netWeight || !grossWeight || !dimension || !cbm) {
-            showMessage('Net Weight, Gross Weight, Dimension, and Approx CBM are required for Cartons.', true);
+        if (!noOfCartoons || !netWeight || !grossWeight || !dimension || !cbm) {
+            showMessage('Number of Cartons, Net Weight, Gross Weight, Dimension, and Approx CBM are required for Cartons.', true);
             return false;
         }
     } else if (type === 'Containers') {
@@ -713,7 +742,11 @@
     const shipmentFrom = document.getElementById('cargo-shipment-from').value;
     const destination = document.getElementById('cargo-destination').value;
     const origin = document.getElementById('cargo-origin').value;
+    const term = document.getElementById('cargo-term').value;
+    const readinessDate = document.getElementById('cargo-readiness-date').value;
+    const pickupAddress = document.getElementById('cargo-pickup-address').value;
     
+    let noOfCartoons = document.getElementById('cargo-no-of-cartoons')?.value;
     let netWeight = document.getElementById('cargo-net-weight')?.value;
     let grossWeight = document.getElementById('cargo-gross-weight')?.value;
     let dimension = document.getElementById('cargo-dimension')?.value;
@@ -725,9 +758,13 @@
           shipment_id: selectedShipmentId,
           logistics_company_id: companyId,
           type: type,
+          term: term,
           shipment_from: shipmentFrom,
           destination: destination,
           origin: origin,
+          readiness_date: readinessDate,
+          pick_up_address: pickupAddress,
+          no_of_cartoons: noOfCartoons ? parseInt(noOfCartoons) : null,
           net_weight: netWeight ? parseFloat(netWeight) : null,
           gross_weight: grossWeight ? parseFloat(grossWeight) : null,
           dimension: dimension || null,
