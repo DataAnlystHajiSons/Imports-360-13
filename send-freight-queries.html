@@ -658,7 +658,10 @@
                     document.getElementById('cargo-net-weight').value = ssd.net_weight;
                 }
                 if (ssd.length && ssd.width && ssd.height && document.getElementById('cargo-dimension')) {
-                    document.getElementById('cargo-dimension').value = `${ssd.length}x${ssd.width}x${ssd.height}`;
+                    const dimInput = document.getElementById('cargo-dimension');
+                    dimInput.value = `${ssd.length}x${ssd.width}x${ssd.height}`;
+                    // Trigger event so chargeable weight calculates automatically
+                    dimInput.dispatchEvent(new Event('input'));
                 }
                 // Handle total containers if type is containers
                 if (ssd.container_type && document.getElementById('cargo-type').value === 'Containers' && document.getElementById('cargo-total-containers')) {
@@ -875,6 +878,7 @@
     let dimension = document.getElementById('cargo-dimension')?.value;
     let cbm = document.getElementById('cargo-cbm')?.value;
     let totalContainers = document.getElementById('cargo-total-containers')?.value;
+    let chargeableWeight = document.getElementById('cargo-chargeable-weight')?.value;
 
     try {
         const queriesToInsert = Array.from(selectedCompanyIds).map(companyId => ({
@@ -892,7 +896,8 @@
           gross_weight: grossWeight ? parseFloat(grossWeight) : null,
           dimension: dimension || null,
           approx_cbm: cbm ? parseFloat(cbm) : null,
-          total_containers: totalContainers || null
+          total_containers: totalContainers || null,
+          chargeable_weight: chargeableWeight ? parseFloat(chargeableWeight) : null
         }));
 
         const { data: newQueries, error } = await supabase
