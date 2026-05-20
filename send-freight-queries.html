@@ -750,6 +750,10 @@
             <label style="font-weight: 600; margin-bottom: 8px;">Approx CBM <span style="color: #DC2626;">*</span></label>
             <input type="number" id="cargo-cbm" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
           </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Chargeable Wt (kg)</label>
+            <input type="number" id="cargo-chargeable-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f1f5f9;" readonly placeholder="Auto-calculated">
+          </div>
         </div>
       `;
     } else if (type === 'Containers') {
@@ -775,11 +779,43 @@
             <label style="font-weight: 600; margin-bottom: 8px;">Approx CBM <span style="color: #94A3B8; font-weight: normal; font-size: 0.8rem;">(Optional)</span></label>
             <input type="number" id="cargo-cbm" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
           </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Chargeable Wt (kg)</label>
+            <input type="number" id="cargo-chargeable-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f1f5f9;" readonly placeholder="Auto-calculated">
+          </div>
         </div>
       `;
     }
 
     dynamicContainer.innerHTML = html;
+
+    // Attach listeners for auto-calculation
+    const dimInput = document.getElementById('cargo-dimension');
+    const cartonsInput = document.getElementById('cargo-no-of-cartoons');
+    const chargeableInput = document.getElementById('cargo-chargeable-weight');
+
+    function calculateChargeableWeight() {
+      if (!dimInput || !chargeableInput) return;
+      const dimStr = dimInput.value;
+      const cartons = cartonsInput ? (parseFloat(cartonsInput.value) || 1) : 1;
+      
+      // Look for LxWxH format
+      const match = dimStr.match(/([\d.]+)\s*[xX*]\s*([\d.]+)\s*[xX*]\s*([\d.]+)/);
+      if (match && cartons > 0) {
+        const l = parseFloat(match[1]);
+        const w = parseFloat(match[2]);
+        const h = parseFloat(match[3]);
+        if (l && w && h) {
+          const volWeight = (l * w * h / 6000) * cartons;
+          chargeableInput.value = volWeight.toFixed(2);
+          return;
+        }
+      }
+      chargeableInput.value = ''; // clear if invalid
+    }
+
+    if (dimInput) dimInput.addEventListener('input', calculateChargeableWeight);
+    if (cartonsInput) cartonsInput.addEventListener('input', calculateChargeableWeight);
   }
 
   function validateCargoStep() {
