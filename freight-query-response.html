@@ -571,6 +571,11 @@
       allShipments = shipments;
       const shipmentFilter = document.getElementById('shipment-filter');
       
+      // Clean up old searchable dropdown if it exists to prevent duplicates
+      if (shipmentFilter.previousElementSibling && shipmentFilter.previousElementSibling.classList.contains('searchable-dropdown')) {
+          shipmentFilter.previousElementSibling.remove();
+      }
+      
       // Clear existing options
       shipmentFilter.innerHTML = '';
       
