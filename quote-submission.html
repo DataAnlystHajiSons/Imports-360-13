@@ -438,7 +438,12 @@
             .from('freight_quote_response')
             .select('id, name_of_your_company, received_at')
             .eq('freight_query_id', freightQueryId)
+            .limit(1)
             .maybeSingle();
+
+          if (checkError) {
+             console.warn('Warning checking existing quote:', checkError);
+          }
 
           if (existingQuote) {
             console.log('⚠️ Quote already exists, showing read-only view');
