@@ -720,6 +720,7 @@
                 ${isAwarded ? '<span class="badge badge-awarded"><i class="fas fa-award"></i> Awarded</span>' : ''}
                 
                 <div class="quote-header">
+                    ${res.is_revised ? `<div style="font-size: 11px; color: #fff; background: #ea580c; padding: 3px 8px; border-radius: 12px; display: inline-block; margin-bottom: 5px; font-weight: bold;"><i class="fas fa-sync-alt"></i> Revised Final Quote</div>` : ''}
                     <div class="company-name">${companyName}</div>
                     <div class="total-cost" title="Freight Charges only">${res.mainAmount.toLocaleString()} ${res.mainCurrency}</div>
                     ${res.mainCurrency !== 'PKR' ? `<div style="font-size: 11px; color: #64748b; margin-top: 4px;">≈ ${res.normalizedValue.toLocaleString()} PKR</div>` : ''}
@@ -732,6 +733,20 @@
                 </div>
 
                 <div class="cost-breakdown">
+                    ${res.is_revised && res.previous_quote_data ? `
+                    <div style="background: #fff7ed; border: 1px solid #fdba74; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px;">
+                        <div style="color: #9a3412; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #fdba74; padding-bottom: 3px;">Initial Quote History:</div>
+                        <div style="display: flex; justify-content: space-between; color: #78350f;">
+                            <span>Freight:</span> <span>${getSym(res.previous_quote_data.freight_currency)} ${res.previous_quote_data.freight_charges?.toLocaleString() || '0'}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; color: #78350f;">
+                            <span>DO Charges:</span> <span>${getSym(res.previous_quote_data.do_currency)} ${res.previous_quote_data.do_charges?.toLocaleString() || '0'}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; color: #78350f;">
+                            <span>Other:</span> <span>${getSym(res.previous_quote_data.other_currency)} ${res.previous_quote_data.other_charges?.toLocaleString() || '0'}</span>
+                        </div>
+                    </div>
+                    ` : ''}
                     <div class="breakdown-row">
                         <span>Freight:</span> 
                         <strong>${getSym(res.freight_currency)} ${res.freight_charges?.toLocaleString() || '0'}</strong>
@@ -759,7 +774,9 @@
 
                 ${res.notes ? `<div style="font-size: 13px; color: #64748b; margin-bottom: 15px; font-style: italic;">"${res.notes}"</div>` : ''}
 
-                <div class="quote-footer">
+                <div class="quote-footer" style="flex-wrap: wrap; gap: 10px;">
+                    ${!award && !res.is_unlocked ? `<button class="button button-secondary request-revision-btn" style="flex: 1; min-width: 100%;" data-id="${res.id}" data-company="${companyName}" data-email="${res.freight_query.logistics_company.contact_email}" data-query="${res.freight_query.id}"><i class="fas fa-undo"></i> Request Revised Quote</button>` : ''}
+                    ${res.is_unlocked ? `<div style="flex: 1; min-width: 100%; text-align: center; font-size: 13px; color: #f59e0b; background: #fef3c7; padding: 8px; border-radius: 6px; border: 1px dashed #f59e0b;"><i class="fas fa-unlock"></i> Revision Requested</div>` : ''}
                     ${res.attachment_url ? `<a href="${res.attachment_url}" target="_blank" class="button button-secondary" style="flex: 1;"><i class="fas fa-file-pdf"></i> View PDF</a>` : ''}
                     ${!award ? `<button class="button award-btn" style="flex: 1;" data-id="${res.id}" data-company="${companyName}" data-query="${res.freight_query.id}">Award</button>` : ''}
                 </div>
@@ -769,13 +786,54 @@
     html += '</div>';
     container.innerHTML = html;
 
+    
     document.querySelectorAll('.award-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             openAwardModal(e.target.dataset.id, e.target.dataset.company, e.target.dataset.query);
         });
     });
-  }
 
+    // Add listener for Revision Requests
+    document.querySelectorAll('.request-revision-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const btnEl = e.target.closest('.request-revision-btn');
+            const quoteId = btnEl.dataset.id;
+            const company = btnEl.dataset.company;
+            const email = btnEl.dataset.email;
+            const queryId = btnEl.dataset.query;
+            
+            if(confirm('Are you sure you want to request a revised quote from ' + company + '? This will unlock their form.')) {
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting...';
+                
+                try {
+                    // 1. Unlock the quote in DB
+                    const { error } = await supabase.rpc('request_quote_revision', { p_quote_id: quoteId });
+                    if (error) throw error;
+                    
+                    // 2. Send Email
+                    if(email && email !== 'null' && email !== 'undefined') {
+                        const quoteUrl = `${window.location.origin}/quote-submission.html?freight_query_id=${queryId}`;
+                        await supabase.functions.invoke('send-freight-query-email', {
+                            body: { 
+                                email: email,
+                                quote_url: quoteUrl,
+                                is_revision: true
+                            }
+                        });
+                    }
+                    
+                    alert('Revision requested successfully. Form is now unlocked for ' + company);
+                    loadResponses(); // reload
+                } catch(err) {
+                    console.error(err);
+                    alert('Error requesting revision: ' + err.message);
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = '<i class="fas fa-undo"></i> Request Revised Quote';
+                }
+            }
+        });
+    });
   function openAwardModal(responseId, companyName, queryId) {
       currentAwardData = { responseId, queryId, shipmentId: document.getElementById('shipment-filter').value };
       document.getElementById('award-info').innerHTML = `

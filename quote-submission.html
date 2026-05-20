@@ -368,9 +368,28 @@
         };
         console.log('📤 Submitting quote data:', quoteData);
 
-        const { error } = await supabase
-          .from('freight_quote_response')
-          .insert(quoteData);
+        
+        let error;
+        if (window.unlockedQuoteId) {
+            // It's a revision, update existing row
+            console.log('🔄 Updating existing quote as a revision');
+            const { data: oldQuote } = await supabase.from('freight_quote_response').select('*').eq('id', window.unlockedQuoteId).single();
+            quoteData.is_revised = true;
+            quoteData.is_unlocked = false; // Relock it
+            quoteData.previous_quote_data = oldQuote || null; // Save history
+            
+            const res = await supabase
+              .from('freight_quote_response')
+              .update(quoteData)
+              .eq('id', window.unlockedQuoteId);
+            error = res.error;
+        } else {
+            // Standard insert
+            const res = await supabase
+              .from('freight_quote_response')
+              .insert(quoteData);
+            error = res.error;
+        }
 
         if (error) {
           console.error('Submission error:', error);
@@ -396,6 +415,248 @@
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } catch (err) {
+        console.error('Unexpected error:', err);
+        showMessage('An unexpected error occurred. Please try again.', true);
+      }
+
+      showLoader(false);
+    }
+
+    function disableForm() {
+      const form = document.getElementById('quote-form');
+      const submitButton = document.getElementById('submit-button');
+      
+      // Disable all form inputs
+      const inputs = form.querySelectorAll('input, select, textarea');
+      inputs.forEach(input => {
+        input.disabled = true;
+        input.style.backgroundColor = '#F3F4F6';
+        input.style.color = '#6B7280';
+      });
+      
+      // Disable and update submit button
+      submitButton.disabled = true;
+      submitButton.innerHTML = '<i class="fas fa-check-circle" style="margin-right: 8px;"></i>Quote Submitted';
+      submitButton.style.background = '#9CA3AF';
+      submitButton.style.cursor = 'not-allowed';
+      submitButton.style.transform = 'none';
+    }
+
+    window.submitQuote = submitQuote;
+
+    // Load freight query details when page loads
+    document.addEventListener('DOMContentLoaded', async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const freightQueryId = urlParams.get('freight_query_id');
+      
+      if (freightQueryId) {
+        try {
+          console.log('🔍 DEBUG: Loading freight query with ID:', freightQueryId);
+
+          // Use secure RPC to fetch data bypassing RLS for anonymous users
+          const { data: responseData, error: rpcError } = await supabase
+            .rpc('get_freight_quote_details', { p_freight_query_id: freightQueryId });
+
+          if (rpcError) {
+             throw rpcError;
+          }
+
+          if (responseData && responseData.error) {
+             throw new Error(responseData.error);
+          }
+
+          if (responseData && responseData.existing_quote) {
+            const existingQuote = responseData.existing_quote;
+            console.log('⚠️ Quote already exists, showing read-only view');
+            document.getElementById('freight-info').innerHTML = `
+              <div style="background: rgba(251, 191, 36, 0.05); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(251, 191, 36, 0.2);">
+                <h4 style="color: #92400E; margin-bottom: 15px; font-size: 1.2rem;">⚠️ Quote Already Submitted</h4>
+                <p style="color: #78350F; margin: 0;">
+                  A quote has already been submitted for this freight query by <strong>${existingQuote.name_of_your_company}</strong>
+                  on ${new Date(existingQuote.received_at).toLocaleDateString()}.
+                </p>
+                <p style="color: #78350F; margin: 10px 0 0 0; font-size: 0.9rem;">
+                  If you need to update your quote or believe this is an error, please contact our support team at support@imports360.com
+                </p>
+              </div>
+            `;
+
+            // Disable the form immediately
+            disableForm();
+            return;
+          }
+
+          const freightData = responseData.freight_query;
+          const shipmentData = responseData.shipment;
+          const shipmentProducts = responseData.products;
+
+          let commodities = 'N/A';
+          let products = '';
+
+          if (shipmentProducts && shipmentProducts.length > 0) {
+              const commodityNames = shipmentProducts
+                .map(sp => sp.commodity_name)
+                .filter(Boolean)
+                .filter((value, index, self) => self.indexOf(value) === index);
+
+              commodities = commodityNames.length > 0 ? commodityNames.join(', ') : 'N/A';
+
+              products = shipmentProducts
+                .map(sp => {
+                  const productName = sp.product_name || 'Unknown Product';
+                  const varietyName = sp.variety_name || 'Unknown Variety';
+                  const quantity = sp.quantity || 'N/A';
+                  const unit = sp.unit || '';
+                  return `${productName} - ${varietyName} (${quantity} ${unit})`;
+                })
+                .join('\n');
+          }
+          console.log('🔍 DEBUG: Final data - Commodities:', commodities);
+          console.log('🔍 DEBUG: Final data - Products:', products);
+
+          // Display the freight query details
+          document.getElementById('freight-info').innerHTML = `
+            <div style="background: rgba(124, 58, 237, 0.05); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(124, 58, 237, 0.1);">
+              <h4 style="color: #7C3AED; margin-bottom: 15px; font-size: 1.2rem;">📋 Freight Query Details</h4>
+              
+              ${!freightData.term && !freightData.shipment_from && !freightData.destination && !freightData.gross_weight ? `
+                <div style="background: rgba(251, 191, 36, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #F59E0B;">
+                  <p style="color: #92400E; margin: 0; font-weight: 500;">
+                    <i class="fas fa-info-circle" style="margin-right: 8px;"></i>
+                    This freight query is waiting for detailed information to be completed by our team.
+                  </p>
+                  <p style="color: #78350F; margin: 5px 0 0 24px; font-size: 0.9rem;">
+                    The basic shipment information below is available for your reference.
+                  </p>
+                </div>
+              ` : ''}
+              
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; font-size: 0.95rem;">
+                <div>
+                  <p><strong>Reference Number:</strong><br><span style="color: ${shipmentData?.reference_code ? '#16A34A' : '#64748B'};">${shipmentData?.reference_code || 'N/A'}</span></p>
+                  <p><strong>Term:</strong><br><span style="color: ${freightData.term ? '#16A34A' : '#64748B'};">${freightData.term || 'Pending'}</span></p>
+                  <p><strong>Shipment From:</strong><br><span style="color: ${freightData.shipment_from ? '#16A34A' : '#64748B'};">${freightData.shipment_from || 'Pending'}</span></p>
+                  <p><strong>Destination:</strong><br><span style="color: ${freightData.destination ? '#16A34A' : '#64748B'};">${freightData.destination || 'Pending'}</span></p>
+                </div>
+                <div>
+                  <p><strong>Origin:</strong><br><span style="color: ${freightData.origin ? '#16A34A' : '#64748B'};">${freightData.origin || 'Pending'}</span></p>
+                  <p><strong>Commodity:</strong><br><span style="color: ${commodities !== 'N/A' ? '#16A34A' : '#64748B'};">${commodities}</span></p>
+                  <p><strong>Readiness Date:</strong><br><span style="color: ${freightData.readiness_date ? '#16A34A' : '#64748B'};">${freightData.readiness_date || 'Pending'}</span></p>
+                  <p><strong>Pick-up Address:</strong><br><span style="color: ${freightData.pick_up_address ? '#16A34A' : '#64748B'};">${freightData.pick_up_address || 'Pending'}</span></p>
+                </div>
+                <div>
+                  <p><strong>Gross Weight:</strong><br><span style="color: ${freightData.gross_weight ? '#16A34A' : '#64748B'};">${freightData.gross_weight ? freightData.gross_weight + ' kg' : 'Pending'}</span></p>
+                  <p><strong>Net Weight:</strong><br><span style="color: ${freightData.net_weight ? '#16A34A' : '#64748B'};">${freightData.net_weight ? freightData.net_weight + ' kg' : 'Pending'}</span></p>
+                  <p><strong>Chargeable Weight:</strong><br><span style="color: ${freightData.chargeable_weight ? '#16A34A' : '#64748B'};">${freightData.chargeable_weight ? freightData.chargeable_weight + ' kg' : 'Pending'}</span></p>
+                </div>
+                <div>
+                  <p><strong>Type:</strong><br><span style="color: ${freightData.type ? '#16A34A' : '#64748B'};">${freightData.type || 'Pending'}</span></p>
+                  ${freightData.type === 'Cartons' ? `
+                    <p><strong>Number of Cartons:</strong><br><span style="color: ${freightData.no_of_cartoons ? '#16A34A' : '#64748B'};">${freightData.no_of_cartoons || 'Pending'}</span></p>
+                    <p><strong>Dimension:</strong><br><span style="color: ${freightData.dimension ? '#16A34A' : '#64748B'};">${freightData.dimension || 'Pending'}</span></p>
+                    <p><strong>Approx CBM:</strong><br><span style="color: ${freightData.approx_cbm ? '#16A34A' : '#64748B'};">${freightData.approx_cbm || 'Pending'}</span></p>
+                  ` : freightData.type === 'Containers' ? `
+                    <p><strong>Total Containers:</strong><br><span style="color: ${freightData.total_containers ? '#16A34A' : '#64748B'};">${freightData.total_containers || 'Pending'}</span></p>
+                    <p><strong>Dimension:</strong><br><span style="color: ${freightData.dimension ? '#16A34A' : '#64748B'};">${freightData.dimension || 'N/A'}</span></p>
+                    <p><strong>Approx CBM:</strong><br><span style="color: ${freightData.approx_cbm ? '#16A34A' : '#64748B'};">${freightData.approx_cbm || 'N/A'}</span></p>
+                  ` : `
+                    <p><strong>Number of Cartons:</strong><br><span style="color: ${freightData.no_of_cartoons ? '#16A34A' : '#64748B'};">${freightData.no_of_cartoons || 'Pending'}</span></p>
+                  `}
+                </div>
+                </div>              ${products ? `
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(124, 58, 237, 0.1);">
+                  <p><strong>Products:</strong></p>
+                  <div style="background: rgba(255, 255, 255, 0.7); padding: 10px; border-radius: 8px; margin-top: 5px; white-space: pre-line; font-size: 0.9rem; color: #64748B;">
+                    ${products}
+                  </div>
+                </div>
+              ` : ''}
+              ${freightData.remarks ? `
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(124, 58, 237, 0.1);">
+                  <p><strong>Additional Remarks:</strong></p>
+                  <div style="background: rgba(255, 255, 255, 0.7); padding: 10px; border-radius: 8px; margin-top: 5px; font-size: 0.9rem; color: #64748B;">
+                    ${freightData.remarks}
+                  </div>
+                </div>
+              ` : ''}
+              
+              <div style="margin-top: 20px; padding: 15px; background: rgba(34, 197, 94, 0.05); border-radius: 8px; border-left: 4px solid #22C55E;">
+                <p style="color: #15803D; margin: 0; font-weight: 500;">
+                  <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
+                  You can submit your freight quote based on the available information above.
+                </p>
+                <p style="color: #166534; margin: 5px 0 0 24px; font-size: 0.9rem;">
+                  Our team will contact you if additional details are needed.
+                </p>
+              </div>
+            </div>
+          `;
+
+          
+          // Change form labels dynamically if shipment is "By Sea"
+          if (shipmentData && shipmentData.mode_of_transport === 'By Sea') {
+              const secTitle = document.getElementById('schedule-section-title');
+              if (secTitle) {
+                  secTitle.innerHTML = '<i class="fas fa-ship" id="schedule-icon" style="margin-right: 8px;"></i>Vessel & Schedule Information';
+              }
+              const airlineLabel = document.getElementById('airline-label');
+              const airlineInput = document.getElementById('airline');
+              if (airlineLabel) airlineLabel.innerText = 'Shipping Company';
+              if (airlineInput) airlineInput.placeholder = 'e.g., Maersk, MSC';
+              
+              const flightLabel = document.getElementById('flight-schedule-label');
+              const flightInput = document.getElementById('flight_schedule');
+              if (flightLabel) flightLabel.innerText = 'Vessel Schedule';
+              if (flightInput) flightInput.placeholder = 'e.g., Weekly, Bi-weekly';
+          }
+
+          // Pre-fill logic if unlocked quote exists
+          if (responseData.unlocked_quote) {
+             const uq = responseData.unlocked_quote;
+             window.unlockedQuoteId = uq.id; // Save globally to use in submission
+             
+             // Build a banner
+             const bannerHtml = `
+               <div style="background: rgba(251, 191, 36, 0.1); padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #F59E0B;">
+                  <h4 style="color: #92400E; margin: 0 0 5px 0;">Revision Requested</h4>
+                  <p style="color: #78350F; margin: 0; font-size: 0.9rem;">
+                    We have requested a revised quotation from you. Your previous numbers have been pre-filled below. Please update your rates and resubmit.
+                  </p>
+               </div>
+             `;
+             document.getElementById('freight-info').insertAdjacentHTML('beforeend', bannerHtml);
+
+             // Fill fields
+             if(document.getElementById('name_of_your_company')) document.getElementById('name_of_your_company').value = uq.name_of_your_company || '';
+             if(document.getElementById('name_of_person_filling')) document.getElementById('name_of_person_filling').value = uq.name_of_person_filling || '';
+             if(document.getElementById('transit_time')) document.getElementById('transit_time').value = uq.transit_time || '';
+             if(document.getElementById('flight_schedule')) document.getElementById('flight_schedule').value = uq.flight_schedule || '';
+             if(document.getElementById('airline')) document.getElementById('airline').value = uq.airline || '';
+             if(document.getElementById('cut_of_time')) document.getElementById('cut_of_time').value = uq.cut_of_time || '';
+             if(document.getElementById('tentative_departure_date')) document.getElementById('tentative_departure_date').value = uq.tentative_departure_date || '';
+             if(document.getElementById('tentative_arrival_date')) document.getElementById('tentative_arrival_date').value = uq.tentative_arrival_date || '';
+
+             if(document.getElementById('freight_charges')) document.getElementById('freight_charges').value = uq.freight_charges || '';
+             if(document.getElementById('freight_currency')) document.getElementById('freight_currency').value = uq.freight_currency || 'USD';
+             if(document.getElementById('freight_exchange_rate')) document.getElementById('freight_exchange_rate').value = uq.freight_exchange_rate || '278.50';
+
+             if(document.getElementById('do_charges')) document.getElementById('do_charges').value = uq.do_charges || '';
+             if(document.getElementById('do_currency')) document.getElementById('do_currency').value = uq.do_currency || 'PKR';
+             if(document.getElementById('do_exchange_rate')) document.getElementById('do_exchange_rate').value = uq.do_exchange_rate || '1.00';
+
+             if(document.getElementById('other_charges_detail')) document.getElementById('other_charges_detail').value = uq.other_charges_detail || '';
+             if(document.getElementById('other_charges')) document.getElementById('other_charges').value = uq.other_charges || '';
+             if(document.getElementById('other_currency')) document.getElementById('other_currency').value = uq.other_currency || 'PKR';
+             if(document.getElementById('other_exchange_rate')) document.getElementById('other_exchange_rate').value = uq.other_exchange_rate || '1.00';
+             
+             // Fire change events to trigger currency rate logic
+             ['freight_currency', 'do_currency', 'other_currency'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.dispatchEvent(new Event('change'));
+             });
+          }
+
+        } catch (err) {
         console.error('Unexpected error:', err);
         showMessage('An unexpected error occurred. Please try again.', true);
       }
