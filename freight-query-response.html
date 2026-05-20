@@ -410,55 +410,55 @@
                 ${isAwarded ? '<span class="badge badge-awarded"><i class="fas fa-award"></i> Awarded</span>' : ''}
                 
                 <div class="quote-header">
-                    ${res.is_revised ? \`<div style="font-size: 11px; color: #fff; background: #ea580c; padding: 3px 8px; border-radius: 12px; display: inline-block; margin-bottom: 5px; font-weight: bold;"><i class="fas fa-sync-alt"></i> Revised Final Quote</div>\` : ''}
-                    <div class="company-name">\${companyName}</div>
-                    <div class="total-cost" title="Freight Charges only">\${res.mainAmount.toLocaleString()} \${res.mainCurrency}</div>
-                    \${res.mainCurrency !== 'PKR' ? \`<div style="font-size: 11px; color: #64748b; margin-top: 4px;">≈ \${res.normalizedValue.toLocaleString()} PKR</div>\` : ''}
-                    \${isAwarded && award.awarded_at ? \`
+                    ${res.is_revised ? `<div style="font-size: 11px; color: #fff; background: #ea580c; padding: 3px 8px; border-radius: 12px; display: inline-block; margin-bottom: 5px; font-weight: bold;"><i class="fas fa-sync-alt"></i> Revised Final Quote</div>` : ''}
+                    <div class="company-name">${companyName}</div>
+                    <div class="total-cost" title="Freight Charges only">${res.mainAmount.toLocaleString()} ${res.mainCurrency}</div>
+                    ${res.mainCurrency !== 'PKR' ? `<div style="font-size: 11px; color: #64748b; margin-top: 4px;">≈ ${res.normalizedValue.toLocaleString()} PKR</div>` : ''}
+                    ${isAwarded && award.awarded_at ? `
                         <div class="award-timestamp">
                             <i class="fas fa-calendar-check"></i>
-                            Awarded on \${new Date(award.awarded_at).toLocaleString()}
+                            Awarded on ${new Date(award.awarded_at).toLocaleString()}
                         </div>
-                    \` : ''}
+                    ` : ''}
                 </div>
 
                 <div class="cost-breakdown">
-                    \${res.is_revised && res.previous_quote_data ? \`
+                    ${res.is_revised && res.previous_quote_data ? `
                     <div style="background: #fff7ed; border: 1px solid #fdba74; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px;">
                         <div style="color: #9a3412; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #fdba74; padding-bottom: 3px;">Initial Quote History:</div>
                         <div style="display: flex; justify-content: space-between; color: #78350f;">
-                            <span>Freight:</span> <span>\${getSym(res.previous_quote_data.freight_currency)} \${res.previous_quote_data.freight_charges?.toLocaleString() || '0'}</span>
+                            <span>Freight:</span> <span>${getSym(res.previous_quote_data.freight_currency)} ${res.previous_quote_data.freight_charges?.toLocaleString() || '0'}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; color: #78350f;">
-                            <span>DO Charges:</span> <span>\${getSym(res.previous_quote_data.do_currency)} \${res.previous_quote_data.do_charges?.toLocaleString() || '0'}</span>
+                            <span>DO Charges:</span> <span>${getSym(res.previous_quote_data.do_currency)} ${res.previous_quote_data.do_charges?.toLocaleString() || '0'}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; color: #78350f;">
-                            <span>Other:</span> <span>\${getSym(res.previous_quote_data.other_currency)} \${res.previous_quote_data.other_charges?.toLocaleString() || '0'}</span>
+                            <span>Other:</span> <span>${getSym(res.previous_quote_data.other_currency)} ${res.previous_quote_data.other_charges?.toLocaleString() || '0'}</span>
                         </div>
                     </div>
-                    \` : ''}
-                    <div class="breakdown-row"><span>Freight:</span> <strong>\${getSym(res.freight_currency)} \${res.freight_charges?.toLocaleString() || '0'}</strong></div>
-                    <div class="breakdown-row"><span>DO Charges:</span> <strong>\${getSym(res.do_currency)} \${res.do_charges?.toLocaleString() || '0'}</strong></div>
-                    <div class="breakdown-row"><span>Other Charges:</span> <strong>\${getSym(res.other_currency)} \${res.other_charges?.toLocaleString() || '0'}</strong></div>
+                    ` : ''}
+                    <div class="breakdown-row"><span>Freight:</span> <strong>${getSym(res.freight_currency)} ${res.freight_charges?.toLocaleString() || '0'}</strong></div>
+                    <div class="breakdown-row"><span>DO Charges:</span> <strong>${getSym(res.do_currency)} ${res.do_charges?.toLocaleString() || '0'}</strong></div>
+                    <div class="breakdown-row"><span>Other Charges:</span> <strong>${getSym(res.other_currency)} ${res.other_charges?.toLocaleString() || '0'}</strong></div>
                     <div class="breakdown-row" style="border-top: 1px dashed #e2e8f0; margin-top: 5px; padding-top: 5px; font-weight: 700;">
-                        <span>Total (Est. PKR):</span><strong>Rs \${res.totalNormalized.toLocaleString()}</strong>
+                        <span>Total (Est. PKR):</span><strong>Rs ${res.totalNormalized.toLocaleString()}</strong>
                     </div>
                 </div>
 
                 <div class="metric-grid">
-                    <div class="metric-item"><i class="fas fa-clock"></i> Transit: <span class="metric-value">\${time} Days</span></div>
-                    <div class="metric-item"><i class="fas fa-calendar-alt"></i> Arrival: <span class="metric-value">\${res.tentative_arrival_date ? new Date(res.tentative_arrival_date).toLocaleDateString() : 'N/A'}</span></div>
-                    <div class="metric-item"><i class="fas fa-plane"></i> Schedule: <span class="metric-value">\${res.flight_schedule || 'N/A'}</span></div>
-                    <div class="metric-item"><i class="fas fa-envelope-open-text"></i> Received: <span class="metric-value">\${new Date(res.received_at).toLocaleDateString()}</span></div>
+                    <div class="metric-item"><i class="fas fa-clock"></i> Transit: <span class="metric-value">${time} Days</span></div>
+                    <div class="metric-item"><i class="fas fa-calendar-alt"></i> Arrival: <span class="metric-value">${res.tentative_arrival_date ? new Date(res.tentative_arrival_date).toLocaleDateString() : 'N/A'}</span></div>
+                    <div class="metric-item"><i class="fas fa-plane"></i> Schedule: <span class="metric-value">${res.flight_schedule || 'N/A'}</span></div>
+                    <div class="metric-item"><i class="fas fa-envelope-open-text"></i> Received: <span class="metric-value">${new Date(res.received_at).toLocaleDateString()}</span></div>
                 </div>
 
-                \${res.notes ? \`<div style="font-size: 13px; color: #64748b; margin-bottom: 15px; font-style: italic;">"\${res.notes}"</div>\` : ''}
+                ${res.notes ? `<div style="font-size: 13px; color: #64748b; margin-bottom: 15px; font-style: italic;">"${res.notes}"</div>` : ''}
 
                 <div class="quote-footer">
-                    \${!award && !res.is_unlocked ? \`<button class="button button-secondary request-revision-btn" style="flex: 1; min-width: 100%;" data-id="\${res.id}" data-company="\${companyName}" data-email="\${res.freight_query.logistics_company.contact_email}" data-query="\${res.freight_query.id}"><i class="fas fa-undo"></i> Request Revised Quote</button>\` : ''}
-                    \${res.is_unlocked ? \`<div style="flex: 1; min-width: 100%; text-align: center; font-size: 13px; color: #f59e0b; background: #fef3c7; padding: 8px; border-radius: 6px; border: 1px dashed #f59e0b;"><i class="fas fa-unlock"></i> Revision Requested</div>\` : ''}
-                    \${res.attachment_url ? \`<a href="\${res.attachment_url}" target="_blank" class="button button-secondary" style="flex: 1;"><i class="fas fa-file-pdf"></i> View PDF</a>\` : ''}
-                    \${!award ? \`<button class="button award-btn" style="flex: 1;" data-id="\${res.id}" data-company="\${companyName}" data-query="\${res.freight_query.id}">Award</button>\` : ''}
+                    ${!award && !res.is_unlocked ? `<button class="button button-secondary request-revision-btn" style="flex: 1; min-width: 100%;" data-id="${res.id}" data-company="${companyName}" data-email="${res.freight_query.logistics_company.contact_email}" data-query="${res.freight_query.id}"><i class="fas fa-undo"></i> Request Revised Quote</button>` : ''}
+                    ${res.is_unlocked ? `<div style="flex: 1; min-width: 100%; text-align: center; font-size: 13px; color: #f59e0b; background: #fef3c7; padding: 8px; border-radius: 6px; border: 1px dashed #f59e0b;"><i class="fas fa-unlock"></i> Revision Requested</div>` : ''}
+                    ${res.attachment_url ? `<a href="${res.attachment_url}" target="_blank" class="button button-secondary" style="flex: 1;"><i class="fas fa-file-pdf"></i> View PDF</a>` : ''}
+                    ${!award ? `<button class="button award-btn" style="flex: 1;" data-id="${res.id}" data-company="${companyName}" data-query="${res.freight_query.id}">Award</button>` : ''}
                 </div>
             </div>
         `;
