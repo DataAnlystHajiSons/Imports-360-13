@@ -432,26 +432,27 @@
       if (freightQueryId) {
         try {
           console.log('🔍 DEBUG: Loading freight query with ID:', freightQueryId);
-          
-          // Check if quote already submitted before loading freight details
-          const { data: existingQuote, error: checkError } = await supabase
-            .from('freight_quote_response')
-            .select('id, name_of_your_company, received_at')
-            .eq('freight_query_id', freightQueryId)
-            .limit(1)
-            .maybeSingle();
 
-          if (checkError) {
-             console.warn('Warning checking existing quote:', checkError);
+          // Use secure RPC to fetch data bypassing RLS for anonymous users
+          const { data: responseData, error: rpcError } = await supabase
+            .rpc('get_freight_quote_details', { p_freight_query_id: freightQueryId });
+
+          if (rpcError) {
+             throw rpcError;
           }
 
-          if (existingQuote) {
+          if (responseData && responseData.error) {
+             throw new Error(responseData.error);
+          }
+
+          if (responseData && responseData.existing_quote) {
+            const existingQuote = responseData.existing_quote;
             console.log('⚠️ Quote already exists, showing read-only view');
             document.getElementById('freight-info').innerHTML = `
               <div style="background: rgba(251, 191, 36, 0.05); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(251, 191, 36, 0.2);">
                 <h4 style="color: #92400E; margin-bottom: 15px; font-size: 1.2rem;">⚠️ Quote Already Submitted</h4>
                 <p style="color: #78350F; margin: 0;">
-                  A quote has already been submitted for this freight query by <strong>${existingQuote.name_of_your_company}</strong> 
+                  A quote has already been submitted for this freight query by <strong>${existingQuote.name_of_your_company}</strong>
                   on ${new Date(existingQuote.received_at).toLocaleDateString()}.
                 </p>
                 <p style="color: #78350F; margin: 10px 0 0 0; font-size: 0.9rem;">
@@ -459,86 +460,37 @@
                 </p>
               </div>
             `;
-            
+
             // Disable the form immediately
             disableForm();
             return;
           }
-          
-          // First, fetch basic freight query data
-          const { data: freightData, error: freightError } = await supabase
-            .from('freight_query')
-            .select('*')
-            .eq('id', freightQueryId)
-            .single();
 
-          console.log('🔍 DEBUG: Freight query data:', freightData);
-          console.log('🔍 DEBUG: Freight query error:', freightError);
+          const freightData = responseData.freight_query;
+          const shipmentData = responseData.shipment;
+          const shipmentProducts = responseData.products;
 
-          if (freightError) {
-            throw freightError;
-          }
-
-          // Then fetch shipment data separately
-          let shipmentData = null;
           let commodities = 'N/A';
           let products = '';
 
-          if (freightData.shipment_id) {
-            console.log('🔍 DEBUG: Loading shipment with ID:', freightData.shipment_id);
-            
-            const { data: shipment, error: shipmentError } = await supabase
-              .from('shipment')
-              .select('id, reference_code')
-              .eq('id', freightData.shipment_id)
-              .single();
+          if (shipmentProducts && shipmentProducts.length > 0) {
+              const commodityNames = shipmentProducts
+                .map(sp => sp.commodity_name)
+                .filter(Boolean)
+                .filter((value, index, self) => self.indexOf(value) === index);
 
-            console.log('🔍 DEBUG: Shipment data:', shipment);
-            console.log('🔍 DEBUG: Shipment error:', shipmentError);
+              commodities = commodityNames.length > 0 ? commodityNames.join(', ') : 'N/A';
 
-            if (!shipmentError && shipment) {
-              shipmentData = shipment;
-
-              // Fetch shipment products and commodities
-              const { data: shipmentProducts, error: productsError } = await supabase
-                .from('shipment_products')
-                .select(`
-                  quantity,
-                  unit,
-                  product_variety!inner(
-                    product_name,
-                    variety_name,
-                    commodity!inner(name)
-                  )
-                `)
-                .eq('shipment_id', freightData.shipment_id);
-
-              console.log('🔍 DEBUG: Shipment products:', shipmentProducts);
-              console.log('🔍 DEBUG: Products error:', productsError);
-
-              if (!productsError && shipmentProducts && shipmentProducts.length > 0) {
-                // Extract commodities
-                const commodityNames = shipmentProducts
-                  .map(sp => sp.product_variety?.commodity?.name)
-                  .filter(Boolean)
-                  .filter((value, index, self) => self.indexOf(value) === index);
-                
-                commodities = commodityNames.length > 0 ? commodityNames.join(', ') : 'N/A';
-
-                // Create product descriptions
-                products = shipmentProducts
-                  .map(sp => {
-                    const productName = sp.product_variety?.product_name || 'Unknown Product';
-                    const varietyName = sp.product_variety?.variety_name || 'Unknown Variety';
-                    const quantity = sp.quantity || 'N/A';
-                    const unit = sp.unit || '';
-                    return `${productName} - ${varietyName} (${quantity} ${unit})`;
-                  })
-                  .join('\n');
-              }
-            }
+              products = shipmentProducts
+                .map(sp => {
+                  const productName = sp.product_name || 'Unknown Product';
+                  const varietyName = sp.variety_name || 'Unknown Variety';
+                  const quantity = sp.quantity || 'N/A';
+                  const unit = sp.unit || '';
+                  return `${productName} - ${varietyName} (${quantity} ${unit})`;
+                })
+                .join('\n');
           }
-
           console.log('🔍 DEBUG: Final data - Commodities:', commodities);
           console.log('🔍 DEBUG: Final data - Products:', products);
 
