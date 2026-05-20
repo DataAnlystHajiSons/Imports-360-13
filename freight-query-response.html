@@ -462,100 +462,127 @@
   let currentAwardData = null;
   let shipmentDropdown = null;
 
-  // Searchable Dropdown Implementation
+  
+  // Robust Searchable Dropdown Implementation
   function createSearchableDropdown(selectElement, options, placeholder = 'Select an option') {
+    // Force cleanup of any previous instances in the DOM for this specific select
+    if (selectElement.nextElementSibling && selectElement.nextElementSibling.classList.contains('custom-search-container')) {
+        selectElement.nextElementSibling.remove();
+    }
+
     const container = document.createElement('div');
-    container.className = 'searchable-dropdown';
-    
+    container.className = 'custom-search-container';
+    container.style.position = 'relative';
+    container.style.width = '100%';
+
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'dropdown-input';
     input.placeholder = placeholder;
-    input.readOnly = true;
-    
-    const dropdownList = document.createElement('div');
-    dropdownList.className = 'dropdown-list';
-    
+    input.style.width = '100%';
+    input.style.padding = '10px';
+    input.style.border = '1px solid #e2e8f0';
+    input.style.borderRadius = '8px';
+    input.style.boxSizing = 'border-box';
+    input.style.cursor = 'text';
+    input.style.background = 'white';
+
+    const list = document.createElement('div');
+    list.style.display = 'none';
+    list.style.position = 'absolute';
+    list.style.top = '100%';
+    list.style.left = '0';
+    list.style.right = '0';
+    list.style.background = 'white';
+    list.style.border = '1px solid #e2e8f0';
+    list.style.borderRadius = '8px';
+    list.style.maxHeight = '300px';
+    list.style.overflowY = 'auto';
+    list.style.zIndex = '9999';
+    list.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    list.style.marginTop = '4px';
+
     container.appendChild(input);
-    container.appendChild(dropdownList);
-    
+    container.appendChild(list);
+
+    // Hide original select and place new container exactly after it
     selectElement.style.display = 'none';
-    selectElement.parentNode.insertBefore(container, selectElement);
-    
-    let filteredOptions = [...options];
-    let allOptions = [...options];
-    
-    function renderOptions() {
-      dropdownList.innerHTML = '';
-      if (filteredOptions.length === 0) {
-        const noResults = document.createElement('div');
-        noResults.className = 'no-results';
-        noResults.textContent = 'No results found';
-        dropdownList.appendChild(noResults);
+    selectElement.parentNode.insertBefore(container, selectElement.nextSibling);
+
+    let filtered = [...options];
+
+    const render = () => {
+      list.innerHTML = '';
+      if (filtered.length === 0) {
+        const noRes = document.createElement('div');
+        noRes.textContent = 'No results found';
+        noRes.style.padding = '10px 15px';
+        noRes.style.color = '#94a3b8';
+        noRes.style.fontStyle = 'italic';
+        list.appendChild(noRes);
         return;
       }
-      
-      filteredOptions.forEach(option => {
+
+      filtered.forEach(opt => {
         const item = document.createElement('div');
-        item.className = 'dropdown-item' + (option.value === selectElement.value ? ' selected' : '');
-        item.textContent = option.text;
-        item.dataset.value = option.value;
+        item.textContent = opt.text;
+        item.style.padding = '10px 15px';
+        item.style.cursor = 'pointer';
+        item.style.borderBottom = '1px solid #f1f5f9';
+        item.style.color = '#1e293b';
         
-        item.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          selectElement.value = option.value;
-          input.value = option.text;
-          container.classList.remove('active');
-          input.readOnly = true;
+        if (opt.value === selectElement.value) {
+            item.style.background = '#7c3aed';
+            item.style.color = 'white';
+        }
+
+        item.addEventListener('mouseenter', () => { if(opt.value !== selectElement.value) item.style.background = '#f8fafc'; });
+        item.addEventListener('mouseleave', () => { if(opt.value !== selectElement.value) item.style.background = 'transparent'; });
+
+        item.addEventListener('mousedown', (e) => {
+          e.preventDefault(); // Prevent input blur
+          selectElement.value = opt.value;
+          input.value = opt.text;
+          list.style.display = 'none';
           selectElement.dispatchEvent(new Event('change', { bubbles: true }));
         });
-        dropdownList.appendChild(item);
+
+        list.appendChild(item);
       });
-    }
-    
-    function filterOptions(searchTerm) {
-      const term = searchTerm.toLowerCase().trim();
-      filteredOptions = term === '' ? [...allOptions] : allOptions.filter(opt => opt.text.toLowerCase().includes(term));
-      renderOptions();
-    }
-    
-    input.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (input.readOnly) {
-        input.readOnly = false;
-        input.value = '';
-        container.classList.add('active');
-        input.focus();
-        filterOptions('');
-      }
-    });
-    
-    input.addEventListener('input', (e) => filterOptions(e.target.value));
-    
-    document.addEventListener('click', (e) => {
-      if (!container.contains(e.target)) {
-        container.classList.remove('active');
-        input.readOnly = true;
-        
-        // Find the selected option text to restore the input value
-        const currentVal = selectElement.value;
-        const selected = allOptions.find(opt => opt.value === currentVal);
-        if (selected) {
-            input.value = selected.text;
-        } else if (allOptions.length > 0) {
-            input.value = allOptions[0].text;
-        }
-      }
+    };
+
+    input.addEventListener('focus', () => {
+      input.value = ''; // clear to allow searching all
+      filtered = [...options];
+      render();
+      list.style.display = 'block';
     });
 
-    renderOptions();
+    input.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase().trim();
+      filtered = term ? options.filter(o => o.text.toLowerCase().includes(term)) : [...options];
+      render();
+    });
+
+    input.addEventListener('blur', () => {
+      setTimeout(() => {
+          list.style.display = 'none';
+          // Restore text value of selected item
+          const selected = options.find(o => o.value === selectElement.value);
+          input.value = selected ? selected.text : '';
+      }, 150); // slight delay to allow mousedown to fire on items
+    });
+
+    // Initial render
+    render();
+    const initialSel = options.find(o => o.value === selectElement.value);
+    if(initialSel) input.value = initialSel.text;
+
     return {
       setValue: (val) => {
         selectElement.value = val;
-        const selected = allOptions.find(opt => opt.value === val);
-        input.value = selected ? selected.text : (allOptions[0] ? allOptions[0].text : '');
-        renderOptions();
+        const s = options.find(o => o.value === val);
+        input.value = s ? s.text : '';
+        render();
       }
     };
   }
@@ -570,15 +597,9 @@
     else {
       allShipments = shipments;
       const shipmentFilter = document.getElementById('shipment-filter');
-      
-      // Clean up old searchable dropdown if it exists to prevent duplicates
-      if (shipmentFilter.previousElementSibling && shipmentFilter.previousElementSibling.classList.contains('searchable-dropdown')) {
-          shipmentFilter.previousElementSibling.remove();
-      }
-      
+
       // Clear existing options
-      shipmentFilter.innerHTML = '';
-      
+      shipmentFilter.innerHTML = '';      
       const options = [
         { value: '', text: 'Select a Shipment...' },
         ...shipments.map(s => ({
