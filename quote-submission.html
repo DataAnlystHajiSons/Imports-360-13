@@ -350,21 +350,22 @@
           flight_schedule: formData.get('flight_schedule'),
           airline: formData.get('airline'),
           cut_of_time: parseFloat(formData.get('cut_of_time')) || null,
+          tentative_departure_date: formData.get('tentative_departure_date') || null,
           tentative_arrival_date: formData.get('tentative_arrival_date') || null,
-          
+
           freight_charges: parseFloat(formData.get('freight_charges')) || 0,
           freight_currency: formData.get('freight_currency'),
           freight_exchange_rate: parseFloat(formData.get('freight_exchange_rate')) || 1.0,
-          
+
           do_charges: parseFloat(formData.get('do_charges')) || 0,
           do_currency: formData.get('do_currency'),
           do_exchange_rate: parseFloat(formData.get('do_exchange_rate')) || 1.0,
-          
+
+          other_charges_detail: formData.get('other_charges_detail'),
           other_charges: parseFloat(formData.get('other_charges')) || 0,
           other_currency: formData.get('other_currency'),
           other_exchange_rate: parseFloat(formData.get('other_exchange_rate')) || 1.0
         };
-
         console.log('📤 Submitting quote data:', quoteData);
 
         const { error } = await supabase
@@ -572,6 +573,23 @@
             </div>
           `;
 
+          // Change form labels dynamically if shipment is "By Sea"
+          if (shipmentData && shipmentData.mode_of_transport === 'By Sea') {
+              const secTitle = document.getElementById('schedule-section-title');
+              if (secTitle) {
+                  secTitle.innerHTML = '<i class="fas fa-ship" id="schedule-icon" style="margin-right: 8px;"></i>Vessel & Schedule Information';
+              }
+              const airlineLabel = document.getElementById('airline-label');
+              const airlineInput = document.getElementById('airline');
+              if (airlineLabel) airlineLabel.innerText = 'Shipping Company';
+              if (airlineInput) airlineInput.placeholder = 'e.g., Maersk, MSC';
+              
+              const flightLabel = document.getElementById('flight-schedule-label');
+              const flightInput = document.getElementById('flight_schedule');
+              if (flightLabel) flightLabel.innerText = 'Vessel Schedule';
+              if (flightInput) flightInput.placeholder = 'e.g., Weekly, Bi-weekly';
+          }
+
         } catch (err) {
           console.error('❌ Error loading freight query details:', err);
           document.getElementById('freight-info').innerHTML = `
@@ -621,14 +639,14 @@
         </div>
 
         <div class="form-section">
-          <h3><i class="fas fa-plane" style="margin-right: 8px;"></i>Flight & Schedule Information</h3>
+          <h3 id="schedule-section-title"><i class="fas fa-plane" id="schedule-icon" style="margin-right: 8px;"></i>Flight & Schedule Information</h3>
           <div class="form-grid">
             <div class="form-group">
-              <label for="airline">Airline</label>
+              <label for="airline" id="airline-label">Airline</label>
               <input type="text" id="airline" name="airline" placeholder="e.g., Emirates, Qatar Airways">
             </div>
             <div class="form-group">
-              <label for="flight_schedule">Flight Schedule</label>
+              <label for="flight_schedule" id="flight-schedule-label">Flight Schedule</label>
               <input type="text" id="flight_schedule" name="flight_schedule" placeholder="e.g., Daily, Mon/Wed/Fri, Twice weekly">
             </div>
             <div class="form-group">
@@ -638,6 +656,10 @@
             <div class="form-group">
               <label for="cut_of_time">Cut-off Time (In Days)</label>
               <input type="number" id="cut_of_time" name="cut_of_time" step="0.1" placeholder="e.g., 4, 6, 8">
+            </div>
+            <div class="form-group">
+              <label for="tentative_departure_date">Tentative Departure Date</label>
+              <input type="date" id="tentative_departure_date" name="tentative_departure_date">
             </div>
             <div class="form-group">
               <label for="tentative_arrival_date">Tentative Arrival Date</label>
@@ -652,7 +674,7 @@
             <!-- Freight Charges Row -->
             <div style="background: #F8FAFC; padding: 15px; border-radius: 10px; border: 1px solid #E2E8F0;">
               <h4 style="margin-top: 0; margin-bottom: 10px; color: #7C3AED;">Freight Charges</h4>
-              <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+              <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
                 <div class="form-group">
                   <label for="freight_charges">Amount <span class="required">*</span></label>
                   <input type="number" id="freight_charges" name="freight_charges" step="0.01" required placeholder="0.00">
@@ -669,7 +691,7 @@
                 </div>
                 <div class="form-group freight-rate-group">
                   <label for="freight_exchange_rate">Exchange Rate (to PKR) <span class="required">*</span></label>
-                  <input type="number" id="freight_exchange_rate" name="freight_exchange_rate" step="0.01" value="278.50">
+                  <input type="number" id="freight_exchange_rate" name="freight_exchange_rate" step="0.01" value="278.50" style="width: 100%;">
                 </div>
               </div>
             </div>
@@ -677,7 +699,7 @@
             <!-- DO Charges Row -->
             <div style="background: #F8FAFC; padding: 15px; border-radius: 10px; border: 1px solid #E2E8F0;">
               <h4 style="margin-top: 0; margin-bottom: 10px; color: #7C3AED;">DO Charges</h4>
-              <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+              <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
                 <div class="form-group">
                   <label for="do_charges">Amount</label>
                   <input type="number" id="do_charges" name="do_charges" step="0.01" placeholder="0.00">
@@ -694,7 +716,7 @@
                 </div>
                 <div class="form-group do-rate-group" style="display: none;">
                   <label for="do_exchange_rate">Exchange Rate (to PKR) <span class="required">*</span></label>
-                  <input type="number" id="do_exchange_rate" name="do_exchange_rate" step="0.01" value="1.00">
+                  <input type="number" id="do_exchange_rate" name="do_exchange_rate" step="0.01" value="1.00" style="width: 100%;">
                 </div>
               </div>
             </div>
@@ -702,7 +724,11 @@
             <!-- Other Charges Row -->
             <div style="background: #F8FAFC; padding: 15px; border-radius: 10px; border: 1px solid #E2E8F0;">
               <h4 style="margin-top: 0; margin-bottom: 10px; color: #7C3AED;">Other Charges</h4>
-              <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+              <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label for="other_charges_detail">Other Charges Detail</label>
+                  <input type="text" id="other_charges_detail" name="other_charges_detail" placeholder="e.g. Customs, Handling..." style="width: 100%;">
+                </div>
                 <div class="form-group">
                   <label for="other_charges">Amount</label>
                   <input type="number" id="other_charges" name="other_charges" step="0.01" placeholder="0.00">
@@ -719,7 +745,7 @@
                 </div>
                 <div class="form-group other-rate-group" style="display: none;">
                   <label for="other_exchange_rate">Exchange Rate (to PKR) <span class="required">*</span></label>
-                  <input type="number" id="other_exchange_rate" name="other_exchange_rate" step="0.01" value="1.00">
+                  <input type="number" id="other_exchange_rate" name="other_exchange_rate" step="0.01" value="1.00" style="width: 100%;">
                 </div>
               </div>
             </div>
