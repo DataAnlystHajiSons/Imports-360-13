@@ -19,7 +19,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
       display: flex;
       flex-wrap: wrap;
-      gap: 20px;
+      gap: 15px;
       align-items: flex-end;
     }
 
@@ -36,60 +36,23 @@
       color: var(--text-secondary-color);
     }
 
-    /* Searchable Dropdown Styles */
-    .searchable-dropdown {
-      position: relative;
-      width: 100%;
+    /* Native Select styling */
+    select.styled-select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: white;
+        font-size: 14px;
+        color: #1e293b;
+        cursor: pointer;
+        appearance: auto; /* Use native dropdown UI */
     }
 
-    .dropdown-input {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      background: white;
-      cursor: pointer;
-    }
-
-    .searchable-dropdown.active .dropdown-list {
-      display: block;
-    }
-
-    .dropdown-list {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      max-height: 300px;
-      overflow-y: auto;
-      z-index: 1000;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      margin-top: 5px;
-    }
-
-    .dropdown-item {
-      padding: 10px 15px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .dropdown-item:hover, .dropdown-item.highlighted {
-      background: #f1f5f9;
-    }
-
-    .dropdown-item.selected {
-      background: var(--accent-color);
-      color: white;
-    }
-
-    .no-results {
-      padding: 10px 15px;
-      color: #94a3b8;
-      font-style: italic;
+    select.styled-select:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
     }
 
     .comparison-grid {
@@ -116,14 +79,8 @@
         border-color: var(--accent-color);
     }
 
-    .quote-card.best-price {
-        border-top: 5px solid #10b981;
-    }
-
-    .quote-card.fastest {
-        border-top: 5px solid #3b82f6;
-    }
-    
+    .quote-card.best-price { border-top: 5px solid #10b981; }
+    .quote-card.fastest { border-top: 5px solid #3b82f6; }
     .quote-card.awarded {
         border: 2px solid var(--success-color);
         background-color: rgba(16, 185, 129, 0.05);
@@ -132,10 +89,7 @@
 
     .awarded-stripe {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 8px;
+        top: 0; left: 0; width: 100%; height: 8px;
         background: var(--success-color);
         z-index: 5;
     }
@@ -155,241 +109,91 @@
 
     .badge {
         position: absolute;
-        top: -12px;
-        right: 20px;
+        top: -12px; right: 20px;
         padding: 4px 12px;
         border-radius: 20px;
-        font-size: 12px;
-        font-weight: 700;
+        font-size: 12px; font-weight: 700;
         text-transform: uppercase;
-        color: white;
-        z-index: 10;
+        color: white; z-index: 10;
     }
-
     .badge-price { background: #10b981; }
     .badge-speed { background: #3b82f6; }
     .badge-awarded { background: var(--success-color); top: 10px; right: 10px; }
 
     .quote-header {
         border-bottom: 1px solid #f1f5f9;
-        padding-bottom: 15px;
-        margin-bottom: 15px;
+        padding-bottom: 15px; margin-bottom: 15px;
     }
+    .company-name { font-size: 18px; font-weight: 700; color: var(--text-primary-color); }
+    .total-cost { font-size: 28px; font-weight: 800; color: var(--accent-color); margin: 10px 0; }
 
-    .company-name {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--text-primary-color);
-    }
+    .cost-breakdown { background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
+    .breakdown-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
 
-    .total-cost {
-        font-size: 28px;
-        font-weight: 800;
-        color: var(--accent-color);
-        margin: 10px 0;
-    }
+    .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .metric-item { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary-color); }
+    .metric-item i { color: var(--accent-color); width: 16px; }
+    .metric-value { font-weight: 600; color: var(--text-primary-color); }
 
-    .cost-breakdown {
-        background: #f8fafc;
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-    }
-
-    .breakdown-row {
-        display: flex;
-        justify-content: space-between;
-        font-size: 13px;
-        margin-bottom: 5px;
-    }
-
-    .metric-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-
-    .metric-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        color: var(--text-secondary-color);
-    }
-
-    .metric-item i {
-        color: var(--accent-color);
-        width: 16px;
-    }
-
-    .metric-value {
-        font-weight: 600;
-        color: var(--text-primary-color);
-    }
-
-    .quote-footer {
-        margin-top: auto;
-        display: flex;
-        gap: 10px;
-    }
+    .quote-footer { margin-top: auto; display: flex; flex-wrap: wrap; gap: 10px; }
 
     .shipment-banner {
         background: linear-gradient(135deg, var(--accent-color) 0%, var(--highlight-color) 100%);
-        color: white;
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        color: white; padding: 20px; border-radius: 12px; margin-bottom: 10px;
+        display: flex; justify-content: space-between; align-items: center;
     }
+    .shipment-details h2 { margin: 0; color: white; text-align: left; }
+    .shipment-meta { font-size: 14px; opacity: 0.9; margin-top: 5px; }
 
-    .shipment-details h2 {
-        margin: 0;
-        color: white;
-        text-align: left;
-    }
-
-    .shipment-meta {
-        font-size: 14px;
-        opacity: 0.9;
-        margin-top: 5px;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 60px;
-        background: white;
-        border-radius: 12px;
-        color: #94a3b8;
-    }
-
-    .empty-state i {
-        font-size: 48px;
-        margin-bottom: 20px;
-    }
+    .empty-state { text-align: center; padding: 60px; background: white; border-radius: 12px; color: #94a3b8; }
+    .empty-state i { font-size: 48px; margin-bottom: 20px; }
 
     /* Modal Styles */
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 1000;
-        align-items: center;
-        justify-content: center;
-    }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
     .modal.show { display: flex; }
-    .modal-content {
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        max-width: 500px;
-        width: 90%;
-        position: relative;
-    }
-    .close-button {
-        position: absolute;
-        top: 15px;
-        right: 20px;
-        font-size: 24px;
-        cursor: pointer;
-        color: #94a3b8;
-    }
+    .modal-content { background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; position: relative; }
+    .close-button { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #94a3b8; }
   </style>
 </head>
 <body>
   <aside class="sidebar">
      <div class="sidebar-header">
       <img src="https://i.postimg.cc/j5K3DCyc/20250826-1802-Imports-360-Logo-simple-compose-01k3k7grx1f2fsmtvdcvwbx54s.png" alt="Logo" class="sidebar-logo">
-      <button class="sidebar-toggle">
-        <i class="fas fa-bars"></i>
-      </button>
+      <button class="sidebar-toggle"><i class="fas fa-bars"></i></button>
     </div>
     <nav class="sidebar-nav">
       <ul>
-        <li>
-          <a href="admin-dashboard.html" class="nav-link">
-            <i class="fas fa-home icon"></i>
-            <span class="text">Dashboard</span>
-          </a>
-        </li>
+        <li><a href="admin-dashboard.html" class="nav-link"><i class="fas fa-home icon"></i><span class="text">Dashboard</span></a></li>
         <li>
           <a href="#" class="nav-link has-submenu">
-            <i class="fas fa-file-alt icon"></i>
-            <span class="text">Documents</span>
-            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+            <i class="fas fa-file-alt icon"></i><span class="text">Documents</span><span class="arrow"><i class="fas fa-chevron-down"></i></span>
           </a>
           <ul class="submenu">
             <li><a href="documents.html" class="nav-link"><span class="text">Document Management</span></a></li>
             <li><a href="admin-document-requirements.html" class="nav-link"><span class="text">Document Requirements</span></a></li>
           </ul>
         </li>
-        <li>
-          <a href="forecast.html" class="nav-link">
-            <i class="fas fa-bullhorn icon"></i>
-            <span class="text">Forecasts</span>
-          </a>
-        </li>
+        <li><a href="forecast.html" class="nav-link"><i class="fas fa-bullhorn icon"></i><span class="text">Forecasts</span></a></li>
         <li><a href="verification-list.html" class="nav-link"><i class="fas fa-check-double icon"></i><span class="text">Verification List</span></a></li>
         <li>
           <a href="#" class="nav-link has-submenu">
-            <i class="fas fa-box icon"></i>
-            <span class="text">Shipments</span>
-            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+            <i class="fas fa-box icon"></i><span class="text">Shipments</span><span class="arrow"><i class="fas fa-chevron-down"></i></span>
           </a>
           <ul class="submenu">
             <li><a href="shipment_tracker.html" class="nav-link"><span class="text">Shipment Tracker</span></a></li>
             <li><a href="shipment-details.html" class="nav-link"><span class="text">All Shipments</span></a></li>
           </ul>
         </li>
-        <li>
-          <a href="product-details.html" class="nav-link">
-            <i class="fas fa-tags icon"></i>
-            <span class="text">Products</span>
-          </a>
-        </li>
-        <li>
-          <a href="supplier-details.html" class="nav-link">
-            <i class="fas fa-truck icon"></i>
-            <span class="text">Suppliers</span>
-          </a>
-        </li>
-        <li>
-          <a href="supplier-shipment-responses.html" class="nav-link">
-            <i class="fas fa-inbox icon"></i>
-            <span class="text">Supplier Responses</span>
-          </a>
-        </li>
-        <li>
-          <a href="bank-details.html" class="nav-link">
-            <i class="fas fa-university icon"></i>
-            <span class="text">Banks</span>
-          </a>
-        </li>
-
-        <li>
-          <a href="clearing-agent-details.html" class="nav-link">
-            <i class="fas fa-user-shield icon"></i>
-            <span class="text">Clearing Agents</span>
-          </a>
-        </li>
-        <li>
-          <a href="warehouse-details.html" class="nav-link">
-            <i class="fas fa-warehouse icon"></i>
-            <span class="text">Warehouses</span>
-          </a>
-        </li>
+        <li><a href="product-details.html" class="nav-link"><i class="fas fa-tags icon"></i><span class="text">Products</span></a></li>
+        <li><a href="supplier-details.html" class="nav-link"><i class="fas fa-truck icon"></i><span class="text">Suppliers</span></a></li>
+        <li><a href="supplier-shipment-responses.html" class="nav-link"><i class="fas fa-inbox icon"></i><span class="text">Supplier Responses</span></a></li>
+        <li><a href="bank-details.html" class="nav-link"><i class="fas fa-university icon"></i><span class="text">Banks</span></a></li>
+        <li><a href="clearing-agent-details.html" class="nav-link"><i class="fas fa-user-shield icon"></i><span class="text">Clearing Agents</span></a></li>
+        <li><a href="warehouse-details.html" class="nav-link"><i class="fas fa-warehouse icon"></i><span class="text">Warehouses</span></a></li>
         <li><a href="logistic-cells.html" class="nav-link"><i class="fas fa-cubes icon"></i><span class="text">Logistic Cells</span></a></li>
         <li>
           <a href="#" class="nav-link has-submenu open">
-            <i class="fas fa-truck-ramp-box icon"></i>
-            <span class="text">Freight</span>
-            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+            <i class="fas fa-truck-ramp-box icon"></i><span class="text">Freight</span><span class="arrow"><i class="fas fa-chevron-down"></i></span>
           </a>
           <ul class="submenu open">
             <li><a href="send-freight-queries.html" class="nav-link"><span class="text">Send Freight Queries</span></a></li>
@@ -411,10 +215,17 @@
     </header>
 
     <div class="page-layout">
+      <!-- Searchable Native Dropdown Area -->
       <div class="filters-section">
           <div class="filter-group">
-            <label for="shipment-filter">Target Shipment</label>
-            <select id="shipment-filter"></select>
+            <label for="shipment-search">Search Shipments</label>
+            <input type="text" id="shipment-search" placeholder="Type Reference Code to filter list..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #e2e8f0; box-sizing:border-box;">
+          </div>
+          <div class="filter-group" style="flex: 2;">
+            <label for="shipment-filter">Select Shipment</label>
+            <select id="shipment-filter" class="styled-select">
+                <option value="">Loading shipments...</option>
+            </select>
           </div>
           <div class="filter-group" style="flex: 0 0 150px; min-width: 150px;">
               <button id="apply-filters-btn" class="button" style="width: 100%;">Compare</button>
@@ -460,132 +271,6 @@
 
   let allShipments = [];
   let currentAwardData = null;
-  let shipmentDropdown = null;
-
-  
-  // Robust Searchable Dropdown Implementation
-  function createSearchableDropdown(selectElement, options, placeholder = 'Select an option') {
-    // Force cleanup of any previous instances in the DOM for this specific select
-    if (selectElement.nextElementSibling && selectElement.nextElementSibling.classList.contains('custom-search-container')) {
-        selectElement.nextElementSibling.remove();
-    }
-
-    const container = document.createElement('div');
-    container.className = 'custom-search-container';
-    container.style.position = 'relative';
-    container.style.width = '100%';
-
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = placeholder;
-    input.style.width = '100%';
-    input.style.padding = '10px';
-    input.style.border = '1px solid #e2e8f0';
-    input.style.borderRadius = '8px';
-    input.style.boxSizing = 'border-box';
-    input.style.cursor = 'text';
-    input.style.background = 'white';
-
-    const list = document.createElement('div');
-    list.style.display = 'none';
-    list.style.position = 'absolute';
-    list.style.top = '100%';
-    list.style.left = '0';
-    list.style.right = '0';
-    list.style.background = 'white';
-    list.style.border = '1px solid #e2e8f0';
-    list.style.borderRadius = '8px';
-    list.style.maxHeight = '300px';
-    list.style.overflowY = 'auto';
-    list.style.zIndex = '9999';
-    list.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-    list.style.marginTop = '4px';
-
-    container.appendChild(input);
-    container.appendChild(list);
-
-    // Hide original select and place new container exactly after it
-    selectElement.style.display = 'none';
-    selectElement.parentNode.insertBefore(container, selectElement.nextSibling);
-
-    let filtered = [...options];
-
-    const render = () => {
-      list.innerHTML = '';
-      if (filtered.length === 0) {
-        const noRes = document.createElement('div');
-        noRes.textContent = 'No results found';
-        noRes.style.padding = '10px 15px';
-        noRes.style.color = '#94a3b8';
-        noRes.style.fontStyle = 'italic';
-        list.appendChild(noRes);
-        return;
-      }
-
-      filtered.forEach(opt => {
-        const item = document.createElement('div');
-        item.textContent = opt.text;
-        item.style.padding = '10px 15px';
-        item.style.cursor = 'pointer';
-        item.style.borderBottom = '1px solid #f1f5f9';
-        item.style.color = '#1e293b';
-        
-        if (opt.value === selectElement.value) {
-            item.style.background = '#7c3aed';
-            item.style.color = 'white';
-        }
-
-        item.addEventListener('mouseenter', () => { if(opt.value !== selectElement.value) item.style.background = '#f8fafc'; });
-        item.addEventListener('mouseleave', () => { if(opt.value !== selectElement.value) item.style.background = 'transparent'; });
-
-        item.addEventListener('mousedown', (e) => {
-          e.preventDefault(); // Prevent input blur
-          selectElement.value = opt.value;
-          input.value = opt.text;
-          list.style.display = 'none';
-          selectElement.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-
-        list.appendChild(item);
-      });
-    };
-
-    input.addEventListener('focus', () => {
-      input.value = ''; // clear to allow searching all
-      filtered = [...options];
-      render();
-      list.style.display = 'block';
-    });
-
-    input.addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase().trim();
-      filtered = term ? options.filter(o => o.text.toLowerCase().includes(term)) : [...options];
-      render();
-    });
-
-    input.addEventListener('blur', () => {
-      setTimeout(() => {
-          list.style.display = 'none';
-          // Restore text value of selected item
-          const selected = options.find(o => o.value === selectElement.value);
-          input.value = selected ? selected.text : '';
-      }, 150); // slight delay to allow mousedown to fire on items
-    });
-
-    // Initial render
-    render();
-    const initialSel = options.find(o => o.value === selectElement.value);
-    if(initialSel) input.value = initialSel.text;
-
-    return {
-      setValue: (val) => {
-        selectElement.value = val;
-        const s = options.find(o => o.value === val);
-        input.value = s ? s.text : '';
-        render();
-      }
-    };
-  }
 
   async function loadFilters() {
     const { data: shipments, error } = await supabase
@@ -593,44 +278,35 @@
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) console.error(error);
-    else {
-      allShipments = shipments;
-      const shipmentFilter = document.getElementById('shipment-filter');
-
-      // Clear existing options
-      shipmentFilter.innerHTML = '';      
-      const options = [
-        { value: '', text: 'Select a Shipment...' },
-        ...shipments.map(s => ({
-          value: s.id,
-          text: `${s.reference_code} - ${s.product_name || 'N/A'}`
-        }))
-      ];
-      
-      // Populate original select for fallback
-      options.forEach(opt => {
-          const o = document.createElement('option');
-          o.value = opt.value;
-          o.textContent = opt.text;
-          shipmentFilter.appendChild(o);
-      });
-      
-      shipmentDropdown = createSearchableDropdown(shipmentFilter, options, 'Search Shipments...');
+    if (error) {
+        console.error(error);
+        return;
     }
+    
+    allShipments = shipments;
+    populateSelectDropdown(allShipments);
+  }
+
+  function populateSelectDropdown(shipmentsToRender) {
+      const select = document.getElementById('shipment-filter');
+      select.innerHTML = '<option value="">Select a Shipment...</option>';
+      
+      shipmentsToRender.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = `${s.reference_code} - ${s.product_name || 'N/A'}`;
+          select.appendChild(opt);
+      });
   }
 
   async function loadResponses(e) {
-    if (e) e.preventDefault(); // Prevent any default behavior
+    if (e) e.preventDefault();
     
     const shipmentId = document.getElementById('shipment-filter').value;
     if (!shipmentId) {
         document.getElementById('shipment-info-banner').innerHTML = '';
         document.getElementById('responses-container').innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-ship"></i>
-                <h3>Select a shipment to compare quotes</h3>
-            </div>
+            <div class="empty-state"><i class="fas fa-ship"></i><h3>Select a shipment to compare quotes</h3></div>
         `;
         return;
     }
@@ -645,13 +321,8 @@
       .select(`
         *,
         freight_query!inner(
-          id,
-          shipment_id,
-          logistics_company_id,
-          logistics_company!inner(
-            name,
-            contact_email
-          )
+          id, shipment_id, logistics_company_id,
+          logistics_company!inner(name, contact_email)
         )
       `)
       .eq('freight_query.shipment_id', shipmentId);
@@ -662,7 +333,7 @@
       return;
     }
 
-    const { data: award, error: awardError } = await supabase
+    const { data: award } = await supabase
         .from('shipment_awarded')
         .select('*')
         .eq('shipment_id', shipmentId)
@@ -672,13 +343,12 @@
   }
 
   function renderShipmentBanner(s) {
-      const banner = document.getElementById('shipment-info-banner');
-      banner.innerHTML = `
+      document.getElementById('shipment-info-banner').innerHTML = `
         <div class="shipment-banner">
             <div class="shipment-details">
                 <h2>${s.reference_code}</h2>
                 <div class="shipment-meta">
-                    <span><i class="fas fa-tag"></i> ${s.commodity || 'N/A'}</span> • 
+                    <span><i class="fas fa-tag"></i> ${s.commodity || 'N/A'}</span> •
                     <span><i class="fas fa-box"></i> ${s.product_name || ''} - ${s.variety_name || ''}</span> •
                     <span><i class="fas fa-truck"></i> ${s.supplier_name || 'N/A'}</span>
                 </div>
@@ -705,21 +375,17 @@
     }
 
     const normalizedResponses = responses.map(r => {
-        // Main comparison is based ONLY on freight_charges
         const freight = r.freight_charges || 0;
         const normalizedFreight = freight * (r.freight_exchange_rate || 1);
-        
-        // Also calculate normalized values for DO and Other for reference
         const normalizedDO = (r.do_charges || 0) * (r.do_exchange_rate || 1);
         const normalizedOther = (r.other_charges || 0) * (r.other_exchange_rate || 1);
-        const totalNormalized = normalizedFreight + normalizedDO + normalizedOther;
-
+        
         return { 
             ...r, 
             mainAmount: freight, 
             mainCurrency: r.freight_currency || 'USD',
             normalizedValue: normalizedFreight,
-            totalNormalized: totalNormalized
+            totalNormalized: normalizedFreight + normalizedDO + normalizedOther
         };
     });
 
@@ -733,9 +399,7 @@
         const isBestPrice = res.normalizedValue === minPrice && res.normalizedValue > 0;
         const isFastest = time === minTime && time !== 999;
         const isAwarded = award && award.freight_quote_response_id === res.id;
-
         const companyName = res.name_of_your_company || res.freight_query.logistics_company.name;
-        
         const getSym = (cur) => ({ 'USD': '$', 'EUR': '€', 'PKR': 'Rs', 'CNY': '¥', 'GBP': '£' }[cur] || cur || '');
 
         html += `
@@ -746,65 +410,55 @@
                 ${isAwarded ? '<span class="badge badge-awarded"><i class="fas fa-award"></i> Awarded</span>' : ''}
                 
                 <div class="quote-header">
-                    ${res.is_revised ? `<div style="font-size: 11px; color: #fff; background: #ea580c; padding: 3px 8px; border-radius: 12px; display: inline-block; margin-bottom: 5px; font-weight: bold;"><i class="fas fa-sync-alt"></i> Revised Final Quote</div>` : ''}
-                    <div class="company-name">${companyName}</div>
-                    <div class="total-cost" title="Freight Charges only">${res.mainAmount.toLocaleString()} ${res.mainCurrency}</div>
-                    ${res.mainCurrency !== 'PKR' ? `<div style="font-size: 11px; color: #64748b; margin-top: 4px;">≈ ${res.normalizedValue.toLocaleString()} PKR</div>` : ''}
-                    ${isAwarded && award.awarded_at ? `
+                    ${res.is_revised ? \`<div style="font-size: 11px; color: #fff; background: #ea580c; padding: 3px 8px; border-radius: 12px; display: inline-block; margin-bottom: 5px; font-weight: bold;"><i class="fas fa-sync-alt"></i> Revised Final Quote</div>\` : ''}
+                    <div class="company-name">\${companyName}</div>
+                    <div class="total-cost" title="Freight Charges only">\${res.mainAmount.toLocaleString()} \${res.mainCurrency}</div>
+                    \${res.mainCurrency !== 'PKR' ? \`<div style="font-size: 11px; color: #64748b; margin-top: 4px;">≈ \${res.normalizedValue.toLocaleString()} PKR</div>\` : ''}
+                    \${isAwarded && award.awarded_at ? \`
                         <div class="award-timestamp">
                             <i class="fas fa-calendar-check"></i>
-                            Awarded on ${new Date(award.awarded_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            Awarded on \${new Date(award.awarded_at).toLocaleString()}
                         </div>
-                    ` : ''}
+                    \` : ''}
                 </div>
 
                 <div class="cost-breakdown">
-                    ${res.is_revised && res.previous_quote_data ? `
+                    \${res.is_revised && res.previous_quote_data ? \`
                     <div style="background: #fff7ed; border: 1px solid #fdba74; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px;">
                         <div style="color: #9a3412; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #fdba74; padding-bottom: 3px;">Initial Quote History:</div>
                         <div style="display: flex; justify-content: space-between; color: #78350f;">
-                            <span>Freight:</span> <span>${getSym(res.previous_quote_data.freight_currency)} ${res.previous_quote_data.freight_charges?.toLocaleString() || '0'}</span>
+                            <span>Freight:</span> <span>\${getSym(res.previous_quote_data.freight_currency)} \${res.previous_quote_data.freight_charges?.toLocaleString() || '0'}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; color: #78350f;">
-                            <span>DO Charges:</span> <span>${getSym(res.previous_quote_data.do_currency)} ${res.previous_quote_data.do_charges?.toLocaleString() || '0'}</span>
+                            <span>DO Charges:</span> <span>\${getSym(res.previous_quote_data.do_currency)} \${res.previous_quote_data.do_charges?.toLocaleString() || '0'}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; color: #78350f;">
-                            <span>Other:</span> <span>${getSym(res.previous_quote_data.other_currency)} ${res.previous_quote_data.other_charges?.toLocaleString() || '0'}</span>
+                            <span>Other:</span> <span>\${getSym(res.previous_quote_data.other_currency)} \${res.previous_quote_data.other_charges?.toLocaleString() || '0'}</span>
                         </div>
                     </div>
-                    ` : ''}
-                    <div class="breakdown-row">
-                        <span>Freight:</span> 
-                        <strong>${getSym(res.freight_currency)} ${res.freight_charges?.toLocaleString() || '0'}</strong>
-                    </div>
-                    <div class="breakdown-row">
-                        <span>DO Charges:</span> 
-                        <strong>${getSym(res.do_currency)} ${res.do_charges?.toLocaleString() || '0'}</strong>
-                    </div>
-                    <div class="breakdown-row">
-                        <span>Other Charges:</span> 
-                        <strong>${getSym(res.other_currency)} ${res.other_charges?.toLocaleString() || '0'}</strong>
-                    </div>
+                    \` : ''}
+                    <div class="breakdown-row"><span>Freight:</span> <strong>\${getSym(res.freight_currency)} \${res.freight_charges?.toLocaleString() || '0'}</strong></div>
+                    <div class="breakdown-row"><span>DO Charges:</span> <strong>\${getSym(res.do_currency)} \${res.do_charges?.toLocaleString() || '0'}</strong></div>
+                    <div class="breakdown-row"><span>Other Charges:</span> <strong>\${getSym(res.other_currency)} \${res.other_charges?.toLocaleString() || '0'}</strong></div>
                     <div class="breakdown-row" style="border-top: 1px dashed #e2e8f0; margin-top: 5px; padding-top: 5px; font-weight: 700;">
-                        <span>Total (Est. PKR):</span>
-                        <strong>Rs ${res.totalNormalized.toLocaleString()}</strong>
+                        <span>Total (Est. PKR):</span><strong>Rs \${res.totalNormalized.toLocaleString()}</strong>
                     </div>
                 </div>
 
                 <div class="metric-grid">
-                    <div class="metric-item"><i class="fas fa-clock"></i> Transit: <span class="metric-value">${time} Days</span></div>
-                    <div class="metric-item"><i class="fas fa-calendar-alt"></i> Arrival: <span class="metric-value">${res.tentative_arrival_date ? new Date(res.tentative_arrival_date).toLocaleDateString() : 'N/A'}</span></div>
-                    <div class="metric-item"><i class="fas fa-plane"></i> Schedule: <span class="metric-value">${res.flight_schedule || 'N/A'}</span></div>
-                    <div class="metric-item"><i class="fas fa-envelope-open-text"></i> Received: <span class="metric-value">${new Date(res.received_at).toLocaleDateString()}</span></div>
+                    <div class="metric-item"><i class="fas fa-clock"></i> Transit: <span class="metric-value">\${time} Days</span></div>
+                    <div class="metric-item"><i class="fas fa-calendar-alt"></i> Arrival: <span class="metric-value">\${res.tentative_arrival_date ? new Date(res.tentative_arrival_date).toLocaleDateString() : 'N/A'}</span></div>
+                    <div class="metric-item"><i class="fas fa-plane"></i> Schedule: <span class="metric-value">\${res.flight_schedule || 'N/A'}</span></div>
+                    <div class="metric-item"><i class="fas fa-envelope-open-text"></i> Received: <span class="metric-value">\${new Date(res.received_at).toLocaleDateString()}</span></div>
                 </div>
 
-                ${res.notes ? `<div style="font-size: 13px; color: #64748b; margin-bottom: 15px; font-style: italic;">"${res.notes}"</div>` : ''}
+                \${res.notes ? \`<div style="font-size: 13px; color: #64748b; margin-bottom: 15px; font-style: italic;">"\${res.notes}"</div>\` : ''}
 
-                <div class="quote-footer" style="flex-wrap: wrap; gap: 10px;">
-                    ${!award && !res.is_unlocked ? `<button class="button button-secondary request-revision-btn" style="flex: 1; min-width: 100%;" data-id="${res.id}" data-company="${companyName}" data-email="${res.freight_query.logistics_company.contact_email}" data-query="${res.freight_query.id}"><i class="fas fa-undo"></i> Request Revised Quote</button>` : ''}
-                    ${res.is_unlocked ? `<div style="flex: 1; min-width: 100%; text-align: center; font-size: 13px; color: #f59e0b; background: #fef3c7; padding: 8px; border-radius: 6px; border: 1px dashed #f59e0b;"><i class="fas fa-unlock"></i> Revision Requested</div>` : ''}
-                    ${res.attachment_url ? `<a href="${res.attachment_url}" target="_blank" class="button button-secondary" style="flex: 1;"><i class="fas fa-file-pdf"></i> View PDF</a>` : ''}
-                    ${!award ? `<button class="button award-btn" style="flex: 1;" data-id="${res.id}" data-company="${companyName}" data-query="${res.freight_query.id}">Award</button>` : ''}
+                <div class="quote-footer">
+                    \${!award && !res.is_unlocked ? \`<button class="button button-secondary request-revision-btn" style="flex: 1; min-width: 100%;" data-id="\${res.id}" data-company="\${companyName}" data-email="\${res.freight_query.logistics_company.contact_email}" data-query="\${res.freight_query.id}"><i class="fas fa-undo"></i> Request Revised Quote</button>\` : ''}
+                    \${res.is_unlocked ? \`<div style="flex: 1; min-width: 100%; text-align: center; font-size: 13px; color: #f59e0b; background: #fef3c7; padding: 8px; border-radius: 6px; border: 1px dashed #f59e0b;"><i class="fas fa-unlock"></i> Revision Requested</div>\` : ''}
+                    \${res.attachment_url ? \`<a href="\${res.attachment_url}" target="_blank" class="button button-secondary" style="flex: 1;"><i class="fas fa-file-pdf"></i> View PDF</a>\` : ''}
+                    \${!award ? \`<button class="button award-btn" style="flex: 1;" data-id="\${res.id}" data-company="\${companyName}" data-query="\${res.freight_query.id}">Award</button>\` : ''}
                 </div>
             </div>
         `;
@@ -812,14 +466,11 @@
     html += '</div>';
     container.innerHTML = html;
 
-    
+    // Attach listeners
     document.querySelectorAll('.award-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            openAwardModal(e.target.dataset.id, e.target.dataset.company, e.target.dataset.query);
-        });
+        btn.addEventListener('click', (e) => openAwardModal(e.target.dataset.id, e.target.dataset.company, e.target.dataset.query));
     });
 
-    // Add listener for Revision Requests
     document.querySelectorAll('.request-revision-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const btnEl = e.target.closest('.request-revision-btn');
@@ -827,30 +478,22 @@
             const company = btnEl.dataset.company;
             const email = btnEl.dataset.email;
             const queryId = btnEl.dataset.query;
-            
+
             if(confirm('Are you sure you want to request a revised quote from ' + company + '? This will unlock their form.')) {
                 btnEl.disabled = true;
                 btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting...';
-                
                 try {
-                    // 1. Unlock the quote in DB
                     const { error } = await supabase.rpc('request_quote_revision', { p_quote_id: quoteId });
                     if (error) throw error;
                     
-                    // 2. Send Email
                     if(email && email !== 'null' && email !== 'undefined') {
                         const quoteUrl = `${window.location.origin}/quote-submission.html?freight_query_id=${queryId}`;
                         await supabase.functions.invoke('send-freight-query-email', {
-                            body: { 
-                                email: email,
-                                quote_url: quoteUrl,
-                                is_revision: true
-                            }
+                            body: { email: email, quote_url: quoteUrl, is_revision: true }
                         });
                     }
-                    
-                    alert('Revision requested successfully. Form is now unlocked for ' + company);
-                    loadResponses(); // reload
+                    alert('Revision requested successfully.');
+                    loadResponses();
                 } catch(err) {
                     console.error(err);
                     alert('Error requesting revision: ' + err.message);
@@ -860,6 +503,8 @@
             }
         });
     });
+  }
+
   function openAwardModal(responseId, companyName, queryId) {
       currentAwardData = { responseId, queryId, shipmentId: document.getElementById('shipment-filter').value };
       document.getElementById('award-info').innerHTML = `
@@ -873,31 +518,24 @@
       const btn = document.getElementById('confirm-award-btn');
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
       try {
           const { data: { user } } = await supabase.auth.getUser();
-          
-          const { error: awardError } = await supabase
-            .from('shipment_awarded')
-            .insert({
+          const { error: awardError } = await supabase.from('shipment_awarded').insert({
                 shipment_id: currentAwardData.shipmentId,
                 freight_query_id: currentAwardData.queryId,
                 freight_quote_response_id: currentAwardData.responseId,
                 awarded_by: user.id,
                 notes: document.getElementById('award-notes').value
-            });
-
+          });
           if (awardError) throw awardError;
 
           const { error: stageError } = await supabase.rpc('advance_stage', {
-              p_shipment_id: currentAwardData.shipmentId,
-              p_to_stage: 'award_shipment'
+              p_shipment_id: currentAwardData.shipmentId, p_to_stage: 'award_shipment'
           });
 
           document.getElementById('award-modal').classList.remove('show');
           loadResponses();
           alert('Shipment awarded successfully!');
-
       } catch (err) {
           console.error(err);
           alert('Error awarding shipment: ' + err.message);
@@ -909,16 +547,22 @@
 
   window.onload = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        window.location.href = 'login.html';
-        return;
-    }
+    if (!user) { window.location.href = 'login.html'; return; }
 
-    loadFilters();
+    await loadFilters();
+
+    // Setup basic search filtering for the native select
+    document.getElementById('shipment-search').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase().trim();
+        const filtered = term ? allShipments.filter(s => s.reference_code.toLowerCase().includes(term)) : allShipments;
+        populateSelectDropdown(filtered);
+    });
 
     document.getElementById('apply-filters-btn').addEventListener('click', loadResponses);
     document.getElementById('clear-filters-btn').addEventListener('click', () => {
-        if (shipmentDropdown) shipmentDropdown.setValue('');
+        document.getElementById('shipment-search').value = '';
+        populateSelectDropdown(allShipments);
+        document.getElementById('shipment-filter').value = '';
         loadResponses();
     });
 
@@ -933,9 +577,7 @@
     const sidebarToggle = document.querySelector('.sidebar-toggle');
     const hasSubmenus = document.querySelectorAll('.has-submenu');
 
-    sidebarToggle?.addEventListener('click', () => {
-      sidebar.classList.toggle('collapsed');
-    });
+    sidebarToggle?.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
 
     hasSubmenus.forEach(item => {
       item.addEventListener('click', (e) => {
