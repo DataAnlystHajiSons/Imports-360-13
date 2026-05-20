@@ -331,11 +331,16 @@
       <div class="step-connector"></div>
       <div class="step" data-step="2">
         <div class="step-icon">2</div>
-        <div class="step-label">Select Companies</div>
+        <div class="step-label">Cargo Details</div>
       </div>
       <div class="step-connector"></div>
       <div class="step" data-step="3">
         <div class="step-icon">3</div>
+        <div class="step-label">Select Companies</div>
+      </div>
+      <div class="step-connector"></div>
+      <div class="step" data-step="4">
+        <div class="step-icon">4</div>
         <div class="step-label">Send Queries</div>
       </div>
     </div>
@@ -362,7 +367,47 @@
         </div>
       </div>
 
-      <!-- Step 2: Company Selection -->
+      <!-- New Step: Cargo Details -->
+      <div class="panel" id="cargo-panel">
+        <div class="panel-header">
+          <h2>2. Enter Cargo Details</h2>
+        </div>
+        <div class="panel-body">
+          <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+            <div class="form-group" style="display: flex; flex-direction: column;">
+              <label style="font-weight: 600; margin-bottom: 8px;">Type <span style="color: #DC2626;">*</span></label>
+              <select id="cargo-type" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                <option value="Cartons">Cartons</option>
+                <option value="Containers">Containers</option>
+              </select>
+            </div>
+            <div class="form-group" style="display: flex; flex-direction: column;">
+              <label style="font-weight: 600; margin-bottom: 8px;">Shipment From <span style="color: #DC2626;">*</span></label>
+              <input type="text" id="cargo-shipment-from" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+            </div>
+            <div class="form-group" style="display: flex; flex-direction: column;">
+              <label style="font-weight: 600; margin-bottom: 8px;">Destination Port <span style="color: #DC2626;">*</span></label>
+              <input type="text" id="cargo-destination" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+            </div>
+            <div class="form-group" style="display: flex; flex-direction: column;">
+              <label style="font-weight: 600; margin-bottom: 8px;">Origin <span style="color: #DC2626;">*</span></label>
+              <input type="text" id="cargo-origin" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+            </div>
+          </div>
+
+          <!-- Dynamic Fields container based on Type -->
+          <div id="dynamic-cargo-fields" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+             <!-- Injected by JS -->
+          </div>
+
+          <div class="button-container">
+            <button id="cargo-back-btn" class="button-secondary">Back</button>
+            <button id="cargo-next-btn" class="button">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 (Now 3): Company Selection -->
       <div class="panel" id="company-panel">
         <div class="panel-header">
           <h2>2. Select Logistics Companies</h2>
@@ -425,8 +470,9 @@
     });
 
     document.getElementById('shipment-panel').classList.toggle('active', currentStep === 1);
-    document.getElementById('company-panel').classList.toggle('active', currentStep === 2);
-    document.getElementById('summary-panel').classList.toggle('active', currentStep === 3);
+    document.getElementById('cargo-panel').classList.toggle('active', currentStep === 2);
+    document.getElementById('company-panel').classList.toggle('active', currentStep === 3);
+    document.getElementById('summary-panel').classList.toggle('active', currentStep === 4);
     
     window.scrollTo(0, 0);
   }
@@ -568,16 +614,125 @@
     document.getElementById('send-queries-btn').disabled = !selectedShipmentId || selectedCompanyIds.size === 0;
   }
 
+  function updateDynamicFields() {
+    const type = document.getElementById('cargo-type').value;
+    const dynamicContainer = document.getElementById('dynamic-cargo-fields');
+    let html = '';
+
+    if (type === 'Cartons') {
+      html = `
+        <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Net Weight (kg) <span style="color: #DC2626;">*</span></label>
+            <input type="number" id="cargo-net-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Gross Weight (kg) <span style="color: #DC2626;">*</span></label>
+            <input type="number" id="cargo-gross-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Dimension <span style="color: #DC2626;">*</span></label>
+            <input type="text" id="cargo-dimension" placeholder="e.g. 10x20x30" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Approx CBM <span style="color: #DC2626;">*</span></label>
+            <input type="number" id="cargo-cbm" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+          </div>
+        </div>
+      `;
+    } else if (type === 'Containers') {
+      html = `
+        <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Total Containers <span style="color: #DC2626;">*</span></label>
+            <input type="text" id="cargo-total-containers" placeholder="e.g. 2x20ft" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Net Weight (kg) <span style="color: #94A3B8; font-weight: normal; font-size: 0.8rem;">(Optional)</span></label>
+            <input type="number" id="cargo-net-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Gross Weight (kg) <span style="color: #94A3B8; font-weight: normal; font-size: 0.8rem;">(Optional)</span></label>
+            <input type="number" id="cargo-gross-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Dimension <span style="color: #94A3B8; font-weight: normal; font-size: 0.8rem;">(Optional)</span></label>
+            <input type="text" id="cargo-dimension" placeholder="e.g. 10x20x30" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Approx CBM <span style="color: #94A3B8; font-weight: normal; font-size: 0.8rem;">(Optional)</span></label>
+            <input type="number" id="cargo-cbm" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+          </div>
+        </div>
+      `;
+    }
+
+    dynamicContainer.innerHTML = html;
+  }
+
+  function validateCargoStep() {
+    const type = document.getElementById('cargo-type').value;
+    const shipmentFrom = document.getElementById('cargo-shipment-from').value;
+    const destination = document.getElementById('cargo-destination').value;
+    const origin = document.getElementById('cargo-origin').value;
+
+    if (!shipmentFrom || !destination || !origin) {
+        showMessage('Shipment From, Destination Port, and Origin are required.', true);
+        return false;
+    }
+
+    if (type === 'Cartons') {
+        const netWeight = document.getElementById('cargo-net-weight').value;
+        const grossWeight = document.getElementById('cargo-gross-weight').value;
+        const dimension = document.getElementById('cargo-dimension').value;
+        const cbm = document.getElementById('cargo-cbm').value;
+        if (!netWeight || !grossWeight || !dimension || !cbm) {
+            showMessage('Net Weight, Gross Weight, Dimension, and Approx CBM are required for Cartons.', true);
+            return false;
+        }
+    } else if (type === 'Containers') {
+        const totalContainers = document.getElementById('cargo-total-containers').value;
+        if (!totalContainers) {
+            showMessage('Total Containers is required for Containers.', true);
+            return false;
+        }
+    }
+    
+    document.getElementById('message').innerHTML = ''; // clear error
+    return true;
+  }
+
   async function sendQueries() {
     const sendButton = document.getElementById('send-queries-btn');
     const originalText = sendButton.innerHTML;
     sendButton.disabled = true;
     sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
 
+    // Capture Cargo Details
+    const type = document.getElementById('cargo-type').value;
+    const shipmentFrom = document.getElementById('cargo-shipment-from').value;
+    const destination = document.getElementById('cargo-destination').value;
+    const origin = document.getElementById('cargo-origin').value;
+    
+    let netWeight = document.getElementById('cargo-net-weight')?.value;
+    let grossWeight = document.getElementById('cargo-gross-weight')?.value;
+    let dimension = document.getElementById('cargo-dimension')?.value;
+    let cbm = document.getElementById('cargo-cbm')?.value;
+    let totalContainers = document.getElementById('cargo-total-containers')?.value;
+
     try {
         const queriesToInsert = Array.from(selectedCompanyIds).map(companyId => ({
           shipment_id: selectedShipmentId,
           logistics_company_id: companyId,
+          type: type,
+          shipment_from: shipmentFrom,
+          destination: destination,
+          origin: origin,
+          net_weight: netWeight ? parseFloat(netWeight) : null,
+          gross_weight: grossWeight ? parseFloat(grossWeight) : null,
+          dimension: dimension || null,
+          approx_cbm: cbm ? parseFloat(cbm) : null,
+          total_containers: totalContainers || null
         }));
 
         const { data: newQueries, error } = await supabase
@@ -654,16 +809,28 @@
       }
 
       renderCompanies(allCompanies);
-      document.getElementById('step2-next-btn').disabled = selectedCompanyIds.size === 0;
+      document.getElementById('step3-next-btn').disabled = selectedCompanyIds.size === 0;
       updateSummary();
     });
 
     document.getElementById('send-queries-btn').addEventListener('click', sendQueries);
     
+    document.getElementById('cargo-type').addEventListener('change', updateDynamicFields);
+    updateDynamicFields(); // initial render
+
     document.getElementById('step1-next-btn').addEventListener('click', () => goToStep(2));
-    document.getElementById('step2-back-btn').addEventListener('click', () => goToStep(1));
-    document.getElementById('step2-next-btn').addEventListener('click', () => goToStep(3));
+    
+    document.getElementById('cargo-back-btn').addEventListener('click', () => goToStep(1));
+    document.getElementById('cargo-next-btn').addEventListener('click', () => {
+        if (validateCargoStep()) {
+            goToStep(3);
+        }
+    });
+
     document.getElementById('step3-back-btn').addEventListener('click', () => goToStep(2));
+    document.getElementById('step3-next-btn').addEventListener('click', () => goToStep(4));
+    
+    document.getElementById('step4-back-btn').addEventListener('click', () => goToStep(3));
 
     goToStep(1);
   };
