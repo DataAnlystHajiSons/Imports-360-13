@@ -620,15 +620,57 @@
 
         const { data: ssdData } = await supabase
             .from('supplier_shipment_details')
-            .select('readiness_date')
+            .select('*')
             .eq('shipment_id', shipmentId)
             .limit(1);
 
-        if (ssdData && ssdData.length > 0 && ssdData[0].readiness_date) {
-            const dateVal = ssdData[0].readiness_date.split('T')[0];
-            document.getElementById('cargo-readiness-date').value = dateVal;
+        if (ssdData && ssdData.length > 0) {
+            const ssd = ssdData[0];
+            
+            if (ssd.readiness_date) {
+                document.getElementById('cargo-readiness-date').value = ssd.readiness_date.split('T')[0];
+            } else {
+                document.getElementById('cargo-readiness-date').value = '';
+            }
+
+            if (ssd.origin) document.getElementById('cargo-origin').value = ssd.origin;
+            if (ssd.address) document.getElementById('cargo-pickup-address').value = ssd.address;
+            
+            // Set type to Cartons if cartons_count exists, otherwise wait for user or leave default
+            if (ssd.cartons_count) {
+                document.getElementById('cargo-type').value = 'Cartons';
+            } else if (ssd.container_type) {
+                document.getElementById('cargo-type').value = 'Containers';
+            }
+            
+            // Trigger dynamic field update so the inputs exist before we fill them
+            updateDynamicFields();
+            
+            // Now populate the dynamic fields
+            setTimeout(() => {
+                if (ssd.cartons_count && document.getElementById('cargo-no-of-cartoons')) {
+                    document.getElementById('cargo-no-of-cartoons').value = ssd.cartons_count;
+                }
+                if (ssd.gross_weight && document.getElementById('cargo-gross-weight')) {
+                    document.getElementById('cargo-gross-weight').value = ssd.gross_weight;
+                }
+                if (ssd.net_weight && document.getElementById('cargo-net-weight')) {
+                    document.getElementById('cargo-net-weight').value = ssd.net_weight;
+                }
+                if (ssd.length && ssd.width && ssd.height && document.getElementById('cargo-dimension')) {
+                    document.getElementById('cargo-dimension').value = `${ssd.length}x${ssd.width}x${ssd.height}`;
+                }
+                // Handle total containers if type is containers
+                if (ssd.container_type && document.getElementById('cargo-type').value === 'Containers' && document.getElementById('cargo-total-containers')) {
+                    document.getElementById('cargo-total-containers').value = ssd.container_type;
+                }
+            }, 50);
+
         } else {
             document.getElementById('cargo-readiness-date').value = '';
+            document.getElementById('cargo-origin').value = '';
+            document.getElementById('cargo-pickup-address').value = '';
+            updateDynamicFields();
         }
     } catch (e) {
         console.error('Error autofilling cargo details:', e);
