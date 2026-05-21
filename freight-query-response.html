@@ -153,6 +153,23 @@
     .modal.show { display: flex; }
     .modal-content { background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; position: relative; }
     .close-button { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #94a3b8; }
+  
+    /* UI/UX Improvements */
+    .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: #1e293b; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; font-weight: 500; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+    .toast.warning { background: #f59e0b; }
+
+    .button-outline { background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); text-decoration: none; display: inline-flex; justify-content: center; align-items: center; gap: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; padding: 10px 20px; font-family: inherit; font-size: 14px; }
+    .button-outline:hover { background: rgba(124, 58, 237, 0.05); }
+    
+    .button-warning { background: transparent; border: 1px solid #f59e0b; color: #d97706; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; gap: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; padding: 10px 20px; font-family: inherit; font-size: 14px; }
+    .button-warning:hover { background: #fffbeb; color: #b45309; }
+
+    .quote-card { max-width: 500px; } /* Prevent over-stretching */
+
   </style>
 </head>
 <body>
@@ -227,9 +244,7 @@
                 <option value="">Loading shipments...</option>
             </select>
           </div>
-          <div class="filter-group" style="flex: 0 0 150px; min-width: 150px;">
-              <button id="apply-filters-btn" class="button" style="width: 100%;">Compare</button>
-          </div>
+          
           <div class="filter-group" style="flex: 0 0 100px; min-width: 100px;">
               <button id="clear-filters-btn" class="button-secondary" style="width: 100%;">Clear</button>
           </div>
@@ -243,6 +258,22 @@
             <h3>Select a shipment to compare quotes</h3>
             <p>Compare costs, transit times, and award shipments to logistics companies.</p>
           </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Custom Confirm Modal -->
+  <div id="confirm-modal" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <h2 style="margin-top: 0; color: var(--text-primary-color);">Confirm Action</h2>
+      <p id="confirm-message" style="color: var(--text-secondary-color); margin-bottom: 25px;">Are you sure?</p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button id="cancel-confirm-btn" class="button-outline" style="flex: 1;">Cancel</button>
+        <button id="proceed-confirm-btn" class="button" style="flex: 1;">Proceed</button>
       </div>
     </div>
   </div>
@@ -271,6 +302,52 @@
 
   let allShipments = [];
   let currentAwardData = null;
+
+  function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + type;
+      
+      let icon = 'check-circle';
+      if (type === 'error') icon = 'exclamation-circle';
+      if (type === 'warning') icon = 'exclamation-triangle';
+      
+      toast.innerHTML = '<i class="fas fa-' + icon + '"></i> ' + message;
+      container.appendChild(toast);
+      
+      // Trigger animation
+      setTimeout(() => toast.classList.add('show'), 10);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => toast.remove(), 300);
+      }, 3000);
+  }
+
+  function customConfirm(message, onConfirm) {
+      const modal = document.getElementById('confirm-modal');
+      document.getElementById('confirm-message').textContent = message;
+      modal.classList.add('show');
+      
+      const proceedBtn = document.getElementById('proceed-confirm-btn');
+      const cancelBtn = document.getElementById('cancel-confirm-btn');
+      
+      // Clear previous listeners by replacing elements
+      const newProceed = proceedBtn.cloneNode(true);
+      const newCancel = cancelBtn.cloneNode(true);
+      proceedBtn.parentNode.replaceChild(newProceed, proceedBtn);
+      cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+      
+      newProceed.addEventListener('click', () => {
+          modal.classList.remove('show');
+          onConfirm();
+      });
+      newCancel.addEventListener('click', () => {
+          modal.classList.remove('show');
+      });
+  }
+
 
   async function loadFilters() {
     const { data: shipments, error } = await supabase
@@ -455,9 +532,9 @@
                 ${res.notes ? `<div style="font-size: 13px; color: #64748b; margin-bottom: 15px; font-style: italic;">"${res.notes}"</div>` : ''}
 
                 <div class="quote-footer">
-                    ${!award && !res.is_unlocked ? `<button class="button button-secondary request-revision-btn" style="flex: 1; min-width: 100%;" data-id="${res.id}" data-company="${companyName}" data-email="${res.freight_query.logistics_company.contact_email}" data-query="${res.freight_query.id}"><i class="fas fa-undo"></i> Request Revised Quote</button>` : ''}
+                    ${!award && !res.is_unlocked ? `<button class="button button-warning request-revision-btn" style="flex: 1; min-width: 100%;" data-id="${res.id}" data-company="${companyName}" data-email="${res.freight_query.logistics_company.contact_email}" data-query="${res.freight_query.id}"><i class="fas fa-undo"></i> Request Revised Quote</button>` : ''}
                     ${res.is_unlocked ? `<div style="flex: 1; min-width: 100%; text-align: center; font-size: 13px; color: #f59e0b; background: #fef3c7; padding: 8px; border-radius: 6px; border: 1px dashed #f59e0b;"><i class="fas fa-unlock"></i> Revision Requested</div>` : ''}
-                    ${res.attachment_url ? `<a href="${res.attachment_url}" target="_blank" class="button button-secondary" style="flex: 1;"><i class="fas fa-file-pdf"></i> View PDF</a>` : ''}
+                    ${res.attachment_url ? `<a href="${res.attachment_url}" target="_blank" class="button-outline" style="flex: 1;"><i class="fas fa-file-pdf"></i> View PDF</a>` : ''}
                     ${!award ? `<button class="button award-btn" style="flex: 1;" data-id="${res.id}" data-company="${companyName}" data-query="${res.freight_query.id}">Award</button>` : ''}
                 </div>
             </div>
@@ -535,10 +612,10 @@
 
           document.getElementById('award-modal').classList.remove('show');
           loadResponses();
-          alert('Shipment awarded successfully!');
+          showToast('Shipment awarded successfully!', 'success');
       } catch (err) {
           console.error(err);
-          alert('Error awarding shipment: ' + err.message);
+          showToast('Error awarding shipment: ' + err.message, 'error');
       } finally {
           btn.disabled = false;
           btn.innerHTML = 'Confirm Award';
@@ -550,6 +627,7 @@
     if (!user) { window.location.href = 'login.html'; return; }
 
     await loadFilters();
+    document.getElementById('shipment-search').focus();
 
     // Setup basic search filtering for the native select
     document.getElementById('shipment-search').addEventListener('input', (e) => {
@@ -558,7 +636,7 @@
         populateSelectDropdown(filtered);
     });
 
-    document.getElementById('apply-filters-btn').addEventListener('click', loadResponses);
+    document.getElementById('shipment-filter').addEventListener('change', loadResponses);
     document.getElementById('clear-filters-btn').addEventListener('click', () => {
         document.getElementById('shipment-search').value = '';
         populateSelectDropdown(allShipments);
