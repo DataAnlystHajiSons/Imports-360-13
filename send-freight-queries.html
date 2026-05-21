@@ -483,6 +483,7 @@
   let selectedShipmentId = null;
   let selectedCompanyIds = new Set();
   let currentStep = 1;
+  let currentModeOfTransport = 'sea';
 
   function goToStep(step) {
     currentStep = step;
@@ -594,9 +595,17 @@
     try {
         const { data: shipmentData } = await supabase
             .from('shipment')
-            .select('inco_term')
+            .select('inco_term, mode_of_transport')
             .eq('id', shipmentId)
             .limit(1);
+            
+        if (shipmentData && shipmentData.length > 0) {
+            if (shipmentData[0].mode_of_transport) {
+                currentModeOfTransport = shipmentData[0].mode_of_transport.toLowerCase();
+            } else {
+                currentModeOfTransport = 'sea';
+            }
+        }
             
         if (shipmentData && shipmentData.length > 0 && shipmentData[0].inco_term) {
             const termSelect = document.getElementById('cargo-term');
@@ -746,14 +755,14 @@
             <input type="number" id="cargo-gross-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
           </div>
           <div class="form-group" style="display: flex; flex-direction: column;">
-            <label style="font-weight: 600; margin-bottom: 8px;">Dimension <span style="color: #DC2626;">*</span></label>
+            <label style="font-weight: 600; margin-bottom: 8px;">Dimension (cm) <span style="color: #DC2626;">*</span></label>
             <input type="text" id="cargo-dimension" placeholder="e.g. 10x20x30" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
           </div>
           <div class="form-group" style="display: flex; flex-direction: column;">
             <label style="font-weight: 600; margin-bottom: 8px;">Approx CBM <span style="color: #DC2626;">*</span></label>
-            <input type="number" id="cargo-cbm" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+            <input type="number" id="cargo-cbm" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; ${typeof currentModeOfTransport !== 'undefined' && currentModeOfTransport === 'sea' ? 'background-color: #f1f5f9;' : ''}" ${typeof currentModeOfTransport !== 'undefined' && currentModeOfTransport === 'sea' ? 'readonly placeholder="Auto-calculated"' : 'required'}>
           </div>
-          <div class="form-group" style="display: flex; flex-direction: column;">
+          <div class="form-group" style="display: ${currentModeOfTransport === 'sea' ? 'none' : 'flex'}; flex-direction: column;">
             <label style="font-weight: 600; margin-bottom: 8px;">Chargeable Wt (kg)</label>
             <input type="number" id="cargo-chargeable-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f1f5f9;" readonly placeholder="Auto-calculated">
           </div>
@@ -775,14 +784,14 @@
             <input type="number" id="cargo-gross-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
           </div>
           <div class="form-group" style="display: flex; flex-direction: column;">
-            <label style="font-weight: 600; margin-bottom: 8px;">Dimension <span style="color: #94A3B8; font-weight: normal; font-size: 0.8rem;">(Optional)</span></label>
+            <label style="font-weight: 600; margin-bottom: 8px;">Dimension (cm) <span style="color: #94A3B8; font-weight: normal; font-size: 0.8rem;">(Optional)</span></label>
             <input type="text" id="cargo-dimension" placeholder="e.g. 10x20x30" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
           </div>
           <div class="form-group" style="display: flex; flex-direction: column;">
             <label style="font-weight: 600; margin-bottom: 8px;">Approx CBM <span style="color: #94A3B8; font-weight: normal; font-size: 0.8rem;">(Optional)</span></label>
-            <input type="number" id="cargo-cbm" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+            <input type="number" id="cargo-cbm" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; ${typeof currentModeOfTransport !== 'undefined' && currentModeOfTransport === 'sea' ? 'background-color: #f1f5f9;' : ''}" ${typeof currentModeOfTransport !== 'undefined' && currentModeOfTransport === 'sea' ? 'readonly placeholder="Auto-calculated"' : ''}>
           </div>
-          <div class="form-group" style="display: flex; flex-direction: column;">
+          <div class="form-group" style="display: ${currentModeOfTransport === 'sea' ? 'none' : 'flex'}; flex-direction: column;">
             <label style="font-weight: 600; margin-bottom: 8px;">Chargeable Wt (kg)</label>
             <input type="number" id="cargo-chargeable-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f1f5f9;" readonly placeholder="Auto-calculated">
           </div>
@@ -797,8 +806,10 @@
     const cartonsInput = document.getElementById('cargo-no-of-cartoons');
     const chargeableInput = document.getElementById('cargo-chargeable-weight');
 
+    const cbmInput = document.getElementById('cargo-cbm');
+
     function calculateChargeableWeight() {
-      if (!dimInput || !chargeableInput) return;
+      if (!dimInput) return;
       const dimStr = dimInput.value;
       const cartons = cartonsInput ? (parseFloat(cartonsInput.value) || 1) : 1;
       
@@ -809,12 +820,23 @@
         const w = parseFloat(match[2]);
         const h = parseFloat(match[3]);
         if (l && w && h) {
-          const volWeight = (l * w * h / 6000) * cartons;
-          chargeableInput.value = volWeight.toFixed(2);
+          if (currentModeOfTransport === 'sea') {
+              if (cbmInput) {
+                  const calculatedCBM = (l * w * h / 1000000) * cartons;
+                  cbmInput.value = calculatedCBM.toFixed(4);
+              }
+              if (chargeableInput) chargeableInput.value = '';
+          } else {
+              if (chargeableInput) {
+                  const volWeight = (l * w * h / 6000) * cartons;
+                  chargeableInput.value = volWeight.toFixed(2);
+              }
+          }
           return;
         }
       }
-      chargeableInput.value = ''; // clear if invalid
+      if (chargeableInput) chargeableInput.value = '';
+      if (currentModeOfTransport === 'sea' && cbmInput) cbmInput.value = ''; 
     }
 
     if (dimInput) dimInput.addEventListener('input', calculateChargeableWeight);
@@ -897,7 +919,7 @@
           dimension: dimension || null,
           approx_cbm: cbm ? parseFloat(cbm) : null,
           total_containers: totalContainers || null,
-          chargeable_weight: chargeableWeight ? parseFloat(chargeableWeight) : null
+          chargeable_weight: (currentModeOfTransport !== 'sea' && chargeableWeight) ? parseFloat(chargeableWeight) : null
         }));
 
         const { data: newQueries, error } = await supabase
