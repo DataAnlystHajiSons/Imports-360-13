@@ -593,8 +593,8 @@
           `;
 
           
-          // Change form labels dynamically if shipment is "By Sea"
-          if (shipmentData && shipmentData.mode_of_transport === 'By Sea') {
+          // Change form labels dynamically if shipment is sea transport
+          if (shipmentData && shipmentData.mode_of_transport && shipmentData.mode_of_transport.toLowerCase().includes('sea')) {
               const secTitle = document.getElementById('schedule-section-title');
               if (secTitle) {
                   secTitle.innerHTML = '<i class="fas fa-ship" id="schedule-icon" style="margin-right: 8px;"></i>Vessel & Schedule Information';
