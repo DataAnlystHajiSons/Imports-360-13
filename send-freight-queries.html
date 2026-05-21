@@ -950,19 +950,30 @@
 
         let successCount = 0;
         let failCount = 0;
+        let failureReasons = [];
         
         results.forEach(result => {
           if (result.status === 'fulfilled' && result.value.success) {
             successCount++;
           } else {
             failCount++;
+            if (result.status === 'fulfilled' && !result.value.success) {
+               failureReasons.push(`${result.value.companyName}: ${result.value.error}`);
+            } else if (result.status === 'rejected') {
+               failureReasons.push(`Error: ${result.reason.message || result.reason}`);
+            }
           }
         });
 
         if (failCount === 0) {
             showMessage(`Successfully sent ${successCount} freight queries!`);
         } else {
-            showMessage(`Sent ${successCount} queries, but ${failCount} emails failed. Check console for details.`, true);
+            const errorHtml = `Sent ${successCount} queries, but ${failCount} emails failed.<br>
+            <strong>Details:</strong><br>
+            <ul style="text-align: left; font-size: 0.9rem; margin-top: 5px;">
+              ${failureReasons.map(r => `<li>${r}</li>`).join('')}
+            </ul>`;
+            showMessage(errorHtml, true);
         }
     } catch (err) {
         console.error(err);
