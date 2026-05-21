@@ -929,24 +929,36 @@
 
         if (error) throw error;
 
-        const emailPromises = newQueries.map(newQuery => {
+        // Process emails sequentially to avoid rate limits (e.g., Resend 2 emails/sec limit)
+        const results = [];
+        for (const newQuery of newQueries) {
           const company = allCompanies.find(c => c.id === newQuery.logistics_company_id);
           if (company && company.contact_email) {
             const quoteUrl = `${window.location.origin}/quote-submission.html?freight_query_id=${newQuery.id}`;
-            return supabase.functions.invoke('send-freight-query-email', {
-              body: { 
-                email: company.contact_email,
-                quote_url: quoteUrl
-              }
-            }).then(({ error }) => {
+            try {
+              const { error } = await supabase.functions.invoke('send-freight-query-email', {
+                body: { 
+                  email: company.contact_email,
+                  quote_url: quoteUrl
+                }
+              });
+              
               if (error) throw error;
-              return { companyName: company.name, success: true };
+              results.push({ status: 'fulfilled', value: { companyName: company.name, success: true } });
+            } catch (err) {
+              results.push({ status: 'rejected', reason: err, value: { companyName: company.name, success: false, error: err.message || err } });
+            }
+            
+            // Add a small delay between requests (500ms) to ensure we stay well below rate limits
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+          } else {
+            results.push({ 
+              status: 'fulfilled', 
+              value: { companyName: company ? company.name : 'Unknown', success: false, error: 'No contact email' } 
             });
           }
-          return Promise.resolve({ companyName: company ? company.name : 'Unknown', success: false, error: 'No contact email' });
-        });
-
-        const results = await Promise.allSettled(emailPromises);
+        }
 
         let successCount = 0;
         let failCount = 0;
