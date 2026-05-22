@@ -224,6 +224,90 @@
         outline: none;
     }
   </style>
+
+  <style>
+    /* Advanced Autocomplete Styles */
+    .autocomplete-container {
+        position: relative;
+        width: 100%;
+    }
+    .autocomplete-input {
+        width: 100%;
+        padding: 12px 15px 12px 40px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #1e293b;
+        box-sizing: border-box;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .autocomplete-input:focus {
+        border-color: var(--primary-color, #0d9488);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+    }
+    .autocomplete-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+    }
+    .autocomplete-clear {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        cursor: pointer;
+        display: none;
+    }
+    .autocomplete-clear:hover {
+        color: #ef4444;
+    }
+    .autocomplete-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
+    .autocomplete-item {
+        padding: 12px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+        transition: background 0.15s;
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+    }
+    .autocomplete-item:last-child {
+        border-bottom: none;
+    }
+    .autocomplete-item:hover, .autocomplete-item.active {
+        background-color: #f8fafc;
+    }
+    .autocomplete-item-title {
+        font-weight: 600;
+        color: #1e293b;
+    }
+    .autocomplete-item-desc {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 4px;
+    }
+    .autocomplete-highlight {
+        color: var(--primary-color, #0d9488);
+        font-weight: 700;
+    }
+  </style>
 </head>
 <body>
   <aside class="sidebar">
@@ -287,16 +371,15 @@
     <div class="page-layout">
       <!-- Searchable Native Dropdown Area -->
       <div class="filters-section">
-          
-          <div class="filter-group" style="flex: 2;">
-            <label for="shipment-filter">Select Shipment</label>
-            <select id="shipment-filter" class="styled-select">
-                <option value="">Loading shipments...</option>
-            </select>
-          </div>
-          
-          <div class="filter-group" style="flex: 0 0 100px; min-width: 100px;">
-              <button id="clear-filters-btn" class="button-secondary" style="width: 100%;">Clear</button>
+          <div class="filter-group" style="flex: 1;">
+            <label for="shipment-autocomplete">Search and Select Shipment</label>
+            <div class="autocomplete-container">
+                <i class="fas fa-search autocomplete-icon"></i>
+                <input type="text" id="shipment-autocomplete" class="autocomplete-input" placeholder="Type Reference Code or Product Name..." autocomplete="off">
+                <i class="fas fa-times autocomplete-clear" id="shipment-clear"></i>
+                <div class="autocomplete-dropdown" id="shipment-dropdown"></div>
+                <input type="hidden" id="shipment-filter">
+            </div>
           </div>
       </div>
 
@@ -411,25 +494,10 @@
     }
     
     allShipments = shipments;
-    populateSelectDropdown(allShipments);
+    setupAutocomplete(allShipments);
   }
 
-  function populateSelectDropdown(shipmentsToRender) {
-      const select = document.getElementById('shipment-filter');
-      select.innerHTML = '<option value="">Select a Shipment...</option>';
-      
-      const seenIds = new Set();
-      shipmentsToRender.forEach(s => {
-          if (!seenIds.has(s.id)) {
-              seenIds.add(s.id);
-              const opt = document.createElement('option');
-              opt.value = s.id;
-              // If there are multiple products, maybe just show the first one or a generic "Multiple Products"
-              opt.textContent = `${s.reference_code} - ${s.product_name || 'N/A'}`;
-              select.appendChild(opt);
-          }
-      });
-  }
+
 
   async function loadResponses(e) {
     if (e) e.preventDefault();
@@ -682,25 +750,8 @@
     if (!user) { window.location.href = 'login.html'; return; }
 
     await loadFilters();
-    document.getElementById('shipment-search').focus();
 
-    // Setup basic search filtering for the native select
-    document.getElementById('shipment-search').addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase().trim();
-        const filtered = term ? allShipments.filter(s => s.reference_code.toLowerCase().includes(term)) : allShipments;
-        populateSelectDropdown(filtered);
-    });
-
-    // Standard event listener commented out in favor of jQuery above (or fallback)
-    if (typeof jQuery === 'undefined') {
-        document.getElementById('shipment-filter').addEventListener('change', loadResponses);
-    }
-    document.getElementById('clear-filters-btn').addEventListener('click', () => {
-        document.getElementById('shipment-search').value = '';
-        populateSelectDropdown(allShipments);
-        document.getElementById('shipment-filter').value = '';
-        loadResponses();
-    });
+    // Event listeners for shipment filtering are handled internally by setupAutocomplete()
 
     document.getElementById('close-modal').addEventListener('click', () => {
         document.getElementById('award-modal').classList.remove('show');
