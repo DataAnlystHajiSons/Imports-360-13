@@ -612,7 +612,7 @@
             .from('freight_query')
             .select('*')
             .eq('shipment_id', shipmentId)
-            .order('created_at', { ascending: false });
+            .order('sent_at', { ascending: false });
             
         sentCompanyIds.clear();
         selectedCompanyIds.clear(); // Clear selections when switching shipments
