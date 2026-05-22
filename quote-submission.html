@@ -661,9 +661,10 @@
           document.getElementById('freight-info').innerHTML = `
             <div style="background: rgba(220, 38, 38, 0.05); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(220, 38, 38, 0.1);">
               <p style="color: #DC2626; margin: 0;"><i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>Error loading shipment details: ${err.message}</p>
-              <p style="color: #64748B; margin: 5px 0 0 0; font-size: 0.9rem;">Please try refreshing the page or contact support.</p>
+              <p style="color: #64748B; margin: 5px 0 0 0; font-size: 0.9rem;">This link is invalid, has expired, or the original shipment was deleted. Please contact support.</p>
             </div>
           `;
+          disableForm();
         }
       } else {
         document.getElementById('freight-info').innerHTML = `
@@ -671,6 +672,7 @@
             <p style="color: #DC2626; margin: 0;"><i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>No freight query ID provided. Please use the link from your email.</p>
           </div>
         `;
+        disableForm();
       }
     });
   </script>
