@@ -368,11 +368,16 @@
       const select = document.getElementById('shipment-filter');
       select.innerHTML = '<option value="">Select a Shipment...</option>';
       
+      const seenIds = new Set();
       shipmentsToRender.forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s.id;
-          opt.textContent = `${s.reference_code} - ${s.product_name || 'N/A'}`;
-          select.appendChild(opt);
+          if (!seenIds.has(s.id)) {
+              seenIds.add(s.id);
+              const opt = document.createElement('option');
+              opt.value = s.id;
+              // If there are multiple products, maybe just show the first one or a generic "Multiple Products"
+              opt.textContent = `${s.reference_code} - ${s.product_name || 'N/A'}`;
+              select.appendChild(opt);
+          }
       });
   }
 
