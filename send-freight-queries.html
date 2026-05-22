@@ -541,13 +541,27 @@
     companiesListDiv.innerHTML = '';
     companies.forEach(c => {
       const card = document.createElement('div');
-      card.className = `company-card ${selectedCompanyIds.has(c.id) ? 'selected' : ''}`;
+      const isSent = sentCompanyIds.has(c.id);
+      card.className = `company-card ${selectedCompanyIds.has(c.id) ? 'selected' : ''} ${isSent ? 'already-sent' : ''}`;
       card.dataset.id = c.id;
+      
+      let badgeHtml = '';
+      if (isSent) {
+          badgeHtml = '<span style="font-size: 0.7rem; background: #E2E8F0; color: #64748B; padding: 2px 6px; border-radius: 4px; float: right; margin-top: -2px;">Already Sent</span>';
+      }
+      
       card.innerHTML = `
+        ${badgeHtml}
         <strong>${c.name}</strong>
         <p>${c.contact_email || 'No email'}</p>
       `;
-      card.addEventListener('click', () => toggleCompanySelection(c.id));
+      
+      if (!isSent) {
+          card.addEventListener('click', () => toggleCompanySelection(c.id));
+      } else {
+          card.style.opacity = '0.5';
+          card.style.cursor = 'not-allowed';
+      }
       companiesListDiv.appendChild(card);
     });
   }
@@ -592,7 +606,95 @@
       card.classList.toggle('selected', card.dataset.id === shipmentId);
     });
 
-    // Auto-fill Term and Readiness Date
+    // Fetch previous freight queries for this shipment to find "Already Sent" companies
+    try {
+        const { data: prevQueries } = await supabase
+            .from('freight_query')
+            .select('*')
+            .eq('shipment_id', shipmentId)
+            .order('created_at', { ascending: false });
+            
+        sentCompanyIds.clear();
+        selectedCompanyIds.clear(); // Clear selections when switching shipments
+        
+        let hasPrefilledFromQuery = false;
+
+        if (prevQueries && prevQueries.length > 0) {
+            // Track companies we've already sent to
+            prevQueries.forEach(q => sentCompanyIds.add(q.logistics_company_id));
+            
+            // Re-render companies to show badges
+            renderCompanies(allCompanies);
+
+            // Auto-fill from the most recent query!
+            const recentQuery = prevQueries[0];
+            if (recentQuery.shipment_from) {
+                document.getElementById('cargo-type').value = recentQuery.type || 'Cartons';
+                document.getElementById('cargo-shipment-from').value = recentQuery.shipment_from || '';
+                document.getElementById('cargo-destination').value = recentQuery.destination || '';
+                document.getElementById('cargo-origin').value = recentQuery.origin || '';
+                
+                const termSelect = document.getElementById('cargo-term');
+                if (recentQuery.term) {
+                    let exists = Array.from(termSelect.options).some(opt => opt.value === recentQuery.term);
+                    if (!exists) {
+                        const opt = document.createElement('option');
+                        opt.value = recentQuery.term;
+                        opt.innerHTML = recentQuery.term;
+                        termSelect.appendChild(opt);
+                    }
+                    termSelect.value = recentQuery.term;
+                }
+                
+                if (recentQuery.readiness_date) {
+                    // Try to format it for date input if it's not empty
+                    const parts = recentQuery.readiness_date.split('T');
+                    document.getElementById('cargo-readiness-date').value = parts[0];
+                } else {
+                    document.getElementById('cargo-readiness-date').value = '';
+                }
+                
+                document.getElementById('cargo-pickup-address').value = recentQuery.pick_up_address || '';
+                
+                // Trigger dynamic fields BEFORE filling them
+                updateDynamicFields();
+                
+                setTimeout(() => {
+                    if (recentQuery.type === 'Cartons') {
+                        if (document.getElementById('cargo-no-of-cartoons')) document.getElementById('cargo-no-of-cartoons').value = recentQuery.no_of_cartoons || '';
+                    } else if (recentQuery.type === 'Containers') {
+                        if (document.getElementById('cargo-total-containers')) document.getElementById('cargo-total-containers').value = recentQuery.total_containers || '';
+                    }
+                    
+                    if (document.getElementById('cargo-net-weight')) document.getElementById('cargo-net-weight').value = recentQuery.net_weight || '';
+                    if (document.getElementById('cargo-gross-weight')) document.getElementById('cargo-gross-weight').value = recentQuery.gross_weight || '';
+                    
+                    const dimInput = document.getElementById('cargo-dimension');
+                    if (dimInput) {
+                        dimInput.value = recentQuery.dimension || '';
+                        dimInput.dispatchEvent(new Event('input')); // Recalculate CBM/Chargeable Wt
+                    }
+                }, 50);
+                
+                hasPrefilledFromQuery = true;
+            }
+        } else {
+            // No previous queries, reset state
+            renderCompanies(allCompanies); 
+        }
+
+        if (hasPrefilledFromQuery) {
+            document.getElementById('step1-next-btn').disabled = false;
+            updateSummary();
+            goToStep(2);
+            return; // Skip the supplier_shipment_details fallback
+        }
+
+    } catch (e) {
+        console.error('Error fetching previous queries:', e);
+    }
+
+    // Auto-fill Term and Readiness Date (Fallback to supplier_shipment_details)
     try {
         const { data: shipmentData } = await supabase
             .from('shipment')
@@ -1010,13 +1112,19 @@
     });
 
     document.getElementById('select-all-btn').addEventListener('click', () => {
-      const allCompanyIds = allCompanies.map(c => c.id);
-      const allCurrentlySelected = allCompanyIds.every(id => selectedCompanyIds.has(id));
+      const availableCompanyIds = allCompanies.filter(c => !sentCompanyIds.has(c.id)).map(c => c.id);
+      
+      if (availableCompanyIds.length === 0) {
+          showMessage('All companies have already received this query.', true);
+          return;
+      }
+      
+      const allCurrentlySelected = availableCompanyIds.every(id => selectedCompanyIds.has(id));
       
       if (allCurrentlySelected) {
         selectedCompanyIds.clear();
       } else {
-        allCompanyIds.forEach(id => selectedCompanyIds.add(id));
+        availableCompanyIds.forEach(id => selectedCompanyIds.add(id));
       }
 
       renderCompanies(allCompanies);
