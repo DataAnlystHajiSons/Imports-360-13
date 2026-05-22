@@ -231,9 +231,9 @@
         position: relative;
         width: 100%;
     }
-    .autocomplete-input {
+    input.autocomplete-input {
         width: 100%;
-        padding: 12px 15px 12px 40px;
+        padding: 12px 15px 12px 40px !important;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
         font-size: 14px;
@@ -304,8 +304,11 @@
         margin-top: 4px;
     }
     .autocomplete-highlight {
-        color: var(--primary-color, #0d9488);
+        background-color: #fef08a; /* Yellow highlight background */
+        color: #1e293b; /* Ensure text remains dark */
         font-weight: 700;
+        padding: 0 2px;
+        border-radius: 2px;
     }
   </style>
 </head>
@@ -498,6 +501,157 @@
   }
 
 
+
+
+  let selectedShipmentId = null;
+
+  function setupAutocomplete(shipmentsToRender) {
+      const input = document.getElementById('shipment-autocomplete');
+      const dropdown = document.getElementById('shipment-dropdown');
+      const hiddenInput = document.getElementById('shipment-filter');
+      const clearBtn = document.getElementById('shipment-clear');
+      
+      let currentFocus = -1;
+
+      // Ensure unique shipments
+      const seenIds = new Set();
+      const uniqueShipments = shipmentsToRender.filter(s => {
+          if (!seenIds.has(s.id)) {
+              seenIds.add(s.id);
+              return true;
+          }
+          return false;
+      });
+
+      function renderDropdown(filterText = '') {
+          dropdown.innerHTML = '';
+          const lowerFilter = filterText.toLowerCase();
+          
+          const filtered = uniqueShipments.filter(s => 
+              s.reference_code.toLowerCase().includes(lowerFilter) || 
+              (s.product_name && s.product_name.toLowerCase().includes(lowerFilter))
+          );
+
+          if (filtered.length === 0) {
+              dropdown.innerHTML = '<div style="padding: 12px 15px; color: #64748b; text-align: center;">No shipments found</div>';
+              dropdown.style.display = 'block';
+              return;
+          }
+
+          filtered.forEach(s => {
+              const item = document.createElement('div');
+              item.className = 'autocomplete-item';
+              
+              // Highlight matched text
+              let refHtml = s.reference_code;
+              let prodHtml = s.product_name || 'N/A';
+              
+              if (filterText) {
+                  const regex = new RegExp('(' + filterText.replace(/[.*+?^$\/{}()|[\]\\]/g, '\\$&') + ')', 'gi');
+                  refHtml = refHtml.replace(regex, '<span class="autocomplete-highlight">$1</span>');
+                  if (s.product_name) {
+                      prodHtml = prodHtml.replace(regex, '<span class="autocomplete-highlight">$1</span>');
+                  }
+              }
+
+              item.innerHTML = `
+                  <div class="autocomplete-item-title">${refHtml}</div>
+                  <div class="autocomplete-item-desc"><i class="fas fa-box" style="margin-right: 5px;"></i>${prodHtml}</div>
+              `;
+
+              item.addEventListener('click', () => {
+                  selectShipment(s);
+              });
+
+              dropdown.appendChild(item);
+          });
+          
+          dropdown.style.display = 'block';
+      }
+
+      function selectShipment(shipment) {
+          input.value = `${shipment.reference_code} - ${shipment.product_name || 'N/A'}`;
+          hiddenInput.value = shipment.id;
+          selectedShipmentId = shipment.id;
+          dropdown.style.display = 'none';
+          clearBtn.style.display = 'block';
+          loadResponses();
+      }
+
+      input.addEventListener('input', function() {
+          const val = this.value;
+          currentFocus = -1;
+          
+          // Clear hidden input if user changes text
+          hiddenInput.value = '';
+          selectedShipmentId = null;
+          
+          if (val) {
+              clearBtn.style.display = 'block';
+              renderDropdown(val);
+          } else {
+              clearBtn.style.display = 'none';
+              renderDropdown('');
+          }
+      });
+
+      input.addEventListener('focus', function() {
+          if (!selectedShipmentId) {
+              renderDropdown(this.value);
+          }
+      });
+
+      // Keyboard navigation
+      input.addEventListener('keydown', function(e) {
+          const items = dropdown.getElementsByClassName('autocomplete-item');
+          if (e.key === 'ArrowDown') {
+              currentFocus++;
+              addActive(items);
+          } else if (e.key === 'ArrowUp') {
+              currentFocus--;
+              addActive(items);
+          } else if (e.key === 'Enter') {
+              e.preventDefault();
+              if (currentFocus > -1 && items.length > 0) {
+                  items[currentFocus].click();
+              }
+          } else if (e.key === 'Escape') {
+              dropdown.style.display = 'none';
+          }
+      });
+
+      function addActive(x) {
+          if (!x || x.length === 0) return false;
+          removeActive(x);
+          if (currentFocus >= x.length) currentFocus = 0;
+          if (currentFocus < 0) currentFocus = (x.length - 1);
+          x[currentFocus].classList.add('active');
+          x[currentFocus].scrollIntoView({ block: 'nearest' });
+      }
+
+      function removeActive(x) {
+          for (let i = 0; i < x.length; i++) {
+              x[i].classList.remove('active');
+          }
+      }
+
+      clearBtn.addEventListener('click', function() {
+          input.value = '';
+          hiddenInput.value = '';
+          selectedShipmentId = null;
+          clearBtn.style.display = 'none';
+          dropdown.style.display = 'none';
+          input.focus();
+          loadResponses();
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+          if (!e.target.closest('.autocomplete-container')) {
+              dropdown.style.display = 'none';
+          }
+      });
+  }
 
   async function loadResponses(e) {
     if (e) e.preventDefault();
