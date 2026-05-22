@@ -171,6 +171,59 @@
     .quote-card { max-width: 500px; } /* Prevent over-stretching */
 
   </style>
+
+  <!-- Select2 CSS for searchable dropdowns -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <style>
+    /* Select2 Customization */
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-container--default .select2-selection--single {
+        height: 42px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: white;
+        display: flex;
+        align-items: center;
+    }
+    .select2-container--default.select2-container--open .select2-selection--single,
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+    }
+    .select2-container--default .select2-selection--single:hover {
+        border-color: #cbd5e1;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #1e293b;
+        font-size: 14px;
+        line-height: normal;
+        padding-left: 12px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+        right: 10px;
+    }
+    .select2-dropdown {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        z-index: 1050;
+    }
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: var(--primary-color);
+    }
+    .select2-container--default .select2-search--dropdown .select2-search__field {
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 8px 12px;
+    }
+    .select2-container--default .select2-search--dropdown .select2-search__field:focus {
+        border-color: var(--primary-color);
+        outline: none;
+    }
+  </style>
 </head>
 <body>
   <aside class="sidebar">
@@ -234,10 +287,7 @@
     <div class="page-layout">
       <!-- Searchable Native Dropdown Area -->
       <div class="filters-section">
-          <div class="filter-group">
-            <label for="shipment-search">Search Shipments</label>
-            <input type="text" id="shipment-search" placeholder="Type Reference Code to filter list..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #e2e8f0; box-sizing:border-box;">
-          </div>
+          
           <div class="filter-group" style="flex: 2;">
             <label for="shipment-filter">Select Shipment</label>
             <select id="shipment-filter" class="styled-select">
@@ -641,7 +691,10 @@
         populateSelectDropdown(filtered);
     });
 
-    document.getElementById('shipment-filter').addEventListener('change', loadResponses);
+    // Standard event listener commented out in favor of jQuery above (or fallback)
+    if (typeof jQuery === 'undefined') {
+        document.getElementById('shipment-filter').addEventListener('change', loadResponses);
+    }
     document.getElementById('clear-filters-btn').addEventListener('click', () => {
         document.getElementById('shipment-search').value = '';
         populateSelectDropdown(allShipments);
@@ -676,5 +729,8 @@
     });
   };
 </script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>
