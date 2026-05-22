@@ -1060,76 +1060,8 @@ window.onload = async () => {
     // Event listener for add-product-btn is now handled by ShipmentFormManager
     // document.getElementById('add-product-btn').addEventListener('click', addProductForm);
 
-    document.getElementById('create-shipment-form').addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const messageDiv = document.getElementById('create-shipment-message');
-      const { data: { user } } = await supabase.auth.getUser();
-
-      // 1. Generate reference code and create the shipment
-      const shipmentType = document.querySelector('[name="type"]').value;
-      const paymentTermId = document.querySelector('[name="payment_term_id"]').value;
-      
-      const { data: reference_code, error: refError } = await supabase.rpc('get_next_shipment_reference', { p_shipment_type: shipmentType });
-
-      if (refError) {
-        messageDiv.innerHTML = `<p class="error-message">Error generating reference code: ${refError.message}</p>`;
-        return;
-      }
-
-      // Get mode of transport, inco-term, and freight charges
-      const modeOfTransport = document.getElementById('mode_of_transport')?.value || null;
-      const incoTerm = document.getElementById('inco_term')?.value || null;
-      const freightChargesInput = document.getElementById('freight_charges')?.value;
-      const freightCharges = freightChargesInput ? parseFloat(freightChargesInput) : null;
-
-      const { data: shipment, error: shipmentError } = await supabase
-        .from('shipment')
-        .insert({ 
-          reference_code: reference_code, 
-          created_by: user.id, 
-          type: shipmentType, 
-          payment_term_id: paymentTermId,
-          mode_of_transport: modeOfTransport,
-          inco_term: incoTerm,
-          freight_charges: freightCharges
-        })
-        .select()
-        .single();
-
-      if (shipmentError) {
-        messageDiv.innerHTML = `<p class="error-message">Error creating shipment: ${shipmentError.message}</p>`;
-        return;
-      }
-
-      // 2. Gather product data
-      const productForms = document.querySelectorAll('.product-form-item');
-      const productsToInsert = [];
-      productForms.forEach(form => {
-        productsToInsert.push({
-          shipment_id: shipment.id,
-          product_variety_id: form.querySelector('[name="product_variety_id"]').value,
-          quantity: form.querySelector('[name="quantity"]').value,
-          unit: form.querySelector('[name="unit"]').value
-        });
-      });
-
-      // 3. Insert products
-      const { error: productsError } = await supabase
-        .from('shipment_products')
-        .insert(productsToInsert);
-
-      if (productsError) {
-        messageDiv.innerHTML = `<p class="error-message">Error adding products to shipment: ${productsError.message}</p>`;
-        // Optionally, delete the created shipment if products fail to add
-        await supabase.from('shipment').delete().eq('id', shipment.id);
-      } else {
-        messageDiv.innerHTML = `<p class="success-message">Shipment created successfully!</p>`;
-        document.getElementById('create-shipment-form').reset();
-        closeCreateShipmentModal();
-        loadShipments();
-        loadDashboardStats();
-      }
-    });
+    // Form submission for create-shipment-form is now handled exclusively by ShipmentFormManager.
+    // The legacy event listener has been removed to prevent duplicate shipments.
 
     document.getElementById('create-shipment-btn').addEventListener('click', () => {
       if (shipmentFormManager) {
