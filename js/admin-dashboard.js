@@ -1,6 +1,6 @@
 import { enforcePageAccess, filterSidebarByRole } from './auth-utils.js';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.4";
-import { ShipmentFormManager } from './components/ShipmentFormManager.js';
+import { ShipmentFormManager } from './components/ShipmentFormManager.js?v=2.2';
 import { ShipmentService } from './services/ShipmentService.js';
 import { CommodityService } from './services/CommodityService.js';
 
