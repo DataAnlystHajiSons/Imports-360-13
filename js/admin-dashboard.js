@@ -128,7 +128,7 @@ async function loadShipments(searchTerm = '', filters = {}) {
   }
 
   const tableBody = document.getElementById("shipments-table-body");
-  if (data.length === 0) {
+  if (!data || data.length === 0) {
     tableBody.innerHTML = `
       <tr class="empty-row">
         <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-secondary-color);">
@@ -142,8 +142,17 @@ async function loadShipments(searchTerm = '', filters = {}) {
     return;
   }
 
+  // Deduplicate shipments by ID to prevent visual duplicates from view joins
+  const uniqueShipmentsMap = new Map();
+  data.forEach(shipment => {
+      if (!uniqueShipmentsMap.has(shipment.id)) {
+          uniqueShipmentsMap.set(shipment.id, shipment);
+      }
+  });
+  const uniqueData = Array.from(uniqueShipmentsMap.values());
+
   let html = "";
-  data.forEach(s => {
+  uniqueData.forEach(s => {
     const products = s.product_variety;
     let productCellHtml = 'N/A';
     let varietyCellHtml = 'N/A';
