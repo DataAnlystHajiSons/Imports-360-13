@@ -663,7 +663,8 @@
                     if (recentQuery.type === 'Cartons') {
                         if (document.getElementById('cargo-no-of-cartoons')) document.getElementById('cargo-no-of-cartoons').value = recentQuery.no_of_cartoons || '';
                     } else if (recentQuery.type === 'Containers') {
-                        if (document.getElementById('cargo-total-containers')) document.getElementById('cargo-total-containers').value = recentQuery.total_containers || '';
+                        if (document.getElementById('cargo-no-of-containers')) document.getElementById('cargo-no-of-containers').value = recentQuery.no_of_containers || '';
+                        if (document.getElementById('cargo-container-size')) document.getElementById('cargo-container-size').value = recentQuery.container_size || '';
                     }
                     
                     if (document.getElementById('cargo-net-weight')) document.getElementById('cargo-net-weight').value = recentQuery.net_weight || '';
@@ -776,8 +777,8 @@
                     dimInput.dispatchEvent(new Event('input'));
                 }
                 // Handle total containers if type is containers
-                if (ssd.container_type && document.getElementById('cargo-type').value === 'Containers' && document.getElementById('cargo-total-containers')) {
-                    document.getElementById('cargo-total-containers').value = ssd.container_type;
+                if (ssd.container_type && document.getElementById('cargo-type').value === 'Containers' && document.getElementById('cargo-container-size')) {
+                    document.getElementById('cargo-container-size').value = ssd.container_type;
                 }
             }, 50);
 
@@ -875,8 +876,17 @@
       html = `
         <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
           <div class="form-group" style="display: flex; flex-direction: column;">
-            <label style="font-weight: 600; margin-bottom: 8px;">Total Containers <span style="color: #DC2626;">*</span></label>
-            <input type="text" id="cargo-total-containers" placeholder="e.g. 2x20ft" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+            <label style="font-weight: 600; margin-bottom: 8px;">No of Containers <span style="color: #DC2626;">*</span></label>
+            <input type="number" id="cargo-no-of-containers" placeholder="e.g. 2" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required min="1">
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label style="font-weight: 600; margin-bottom: 8px;">Container Size <span style="color: #DC2626;">*</span></label>
+            <select id="cargo-container-size" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+              <option value="">Select Size</option>
+              <option value="20 ft">20 ft</option>
+              <option value="40 ft">40 ft</option>
+              <option value="45 ft">45 ft</option>
+            </select>
           </div>
           <div class="form-group" style="display: flex; flex-direction: column;">
             <label style="font-weight: 600; margin-bottom: 8px;">Net Weight (kg) <span style="color: #94A3B8; font-weight: normal; font-size: 0.8rem;">(Optional)</span></label>
@@ -971,9 +981,10 @@
             return false;
         }
     } else if (type === 'Containers') {
-        const totalContainers = document.getElementById('cargo-total-containers').value;
-        if (!totalContainers) {
-            showMessage('Total Containers is required for Containers.', true);
+        const noOfContainers = document.getElementById('cargo-no-of-containers').value;
+        const containerSize = document.getElementById('cargo-container-size').value;
+        if (!noOfContainers || !containerSize) {
+            showMessage('No of Containers and Container Size are required for Containers.', true);
             return false;
         }
     }
@@ -1002,7 +1013,8 @@
     let grossWeight = document.getElementById('cargo-gross-weight')?.value;
     let dimension = document.getElementById('cargo-dimension')?.value;
     let cbm = document.getElementById('cargo-cbm')?.value;
-    let totalContainers = document.getElementById('cargo-total-containers')?.value;
+    let noOfContainers = document.getElementById('cargo-no-of-containers')?.value;
+    let containerSize = document.getElementById('cargo-container-size')?.value;
     let chargeableWeight = document.getElementById('cargo-chargeable-weight')?.value;
 
     try {
@@ -1021,7 +1033,8 @@
           gross_weight: grossWeight ? parseFloat(grossWeight) : null,
           dimension: dimension || null,
           approx_cbm: cbm ? parseFloat(cbm) : null,
-          total_containers: totalContainers || null,
+          no_of_containers: noOfContainers ? parseInt(noOfContainers) : null,
+          container_size: containerSize || null,
           chargeable_weight: (currentModeOfTransport !== 'sea' && chargeableWeight) ? parseFloat(chargeableWeight) : null
         }));
 
