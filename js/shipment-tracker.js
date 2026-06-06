@@ -80,9 +80,7 @@
             fields: [
                 { name: "verified", type: "boolean", label: "Verified" },
                 { name: "verification_notes", type: "text", label: "Verification Notes" },
-                { name: "verified_at", type: "datetime-local", label: "Verified At" },
-                { name: "verifier_id", type: "uuid", label: "Verifier", fk: { relation: "app_user", displayColumn: "full_name" } },
-                { name: "verification_doc_url", type: "text", label: "Document URL", readonly: true }
+                { name: "verified_at", type: "datetime-local", label: "Verified At" }
             ]
         },
         "availability_confirmation": {
@@ -91,7 +89,6 @@
                 { name: "available", type: "boolean", label: "Available" },
                 { name: "notes", type: "text", label: "Notes" },
                 { name: "confirmed_at", type: "datetime-local", label: "Confirmed At" },
-                { name: "confirmed_by", type: "uuid", label: "Confirmed By", fk: { relation: "app_user", displayColumn: "full_name" } },
                 { name: "supplier_id", type: "uuid", label: "Supplier", fk: { relation: "supplier", displayColumn: "name" } }
             ]
         },
@@ -175,7 +172,6 @@
                 { name: "awarded", type: "boolean", label: "Awarded" },
                 { name: "notes", type: "text", label: "Notes" },
                 { name: "awarded_at", type: "datetime-local", label: "Awarded At", readonly: true },
-                { name: "awarded_by", type: "uuid", label: "Awarded By", fk: { relation: "app_user", displayColumn: "full_name" }, readonly: true },
                 { name: "freight_quote_response_id", type: "uuid", label: "Freight Quote Response", fk: { relation: "freight_quote_response", displayColumn: "name_of_your_company" } }
             ]
         },
@@ -184,8 +180,6 @@
             fields: [
                 { name: "status", type: "select", label: "Status", options: ["Sended", "Arrived", "Pending"] },
                 { name: "sended_at", type: "datetime-local", label: "Sended At" },
-                { name: "uploaded_by", type: "uuid", label: "Uploaded By", fk: { relation: "app_user", displayColumn: "full_name", constraint: "non_negotiable_docs_uploaded_by_fkey" } },
-                { name: "file_url", type: "text", label: "Docs URL", readonly: true },
                 { name: "bank_id", type: "uuid", label: "Bank", fk: { relation: "bank", displayColumn: "name" } }
             ]
         },
@@ -195,8 +189,6 @@
                 { name: "status", type: "text", label: "Status" },
                 { name: "received_at", type: "datetime-local", label: "Received At" },
                 { name: "bl_date", type: "date", label: "BL Date" },
-                { name: "uploaded_by", type: "uuid", label: "Uploaded By", fk: { relation: "app_user", displayColumn: "full_name", constraint: "original_docs_uploaded_by_fkey" } },
-                { name: "docs_url", type: "text", label: "Docs URL", readonly: true },
                 { name: "shipping_company", type: "text", label: "Shipping Company" },
                 { name: "tracking_number", type: "text", label: "Tracking Number" },
                 { name: "shipping_guarantee_applied_date", type: "date", label: "Shipping Guarantee Applied Date" },
@@ -212,8 +204,7 @@
             table: "bank_endorsement",
             fields: [
                 { name: "endorsed", type: "boolean", label: "Endorsed" },
-                { name: "endorsed_at", type: "datetime-local", label: "Endorsed At" },
-                { name: "updated_by", type: "uuid", label: "Updated By", fk: { relation: "app_user", displayColumn: "full_name" } }
+                { name: "endorsed_at", type: "datetime-local", label: "Endorsed At" }
             ]
         },
         "send_to_clearing_agent": {
@@ -224,7 +215,6 @@
                 { name: "tracking_number", type: "text", label: "Tracking Number" },
                 { name: "sended_at", type: "date", label: "Sended At" },
                 { name: "expected_arrival_date", type: "date", label: "Expected Arrival Date" },
-                { name: "slip_picture_url", type: "text", label: "Slip Picture URL", readonly: true },
                 { name: "clearing_agent_id", type: "uuid", label: "Clearing Agent", fk: { relation: "clearing_agent", displayColumn: "name" } }
             ]
         },
@@ -254,8 +244,7 @@
             table: "gate_out",
             fields: [
                 { name: "is_gate_out", type: "boolean", label: "Gate Out" },
-                { name: "gate_out_date", type: "date", label: "Gate Out Date" },
-                { name: "updated_by", type: "uuid", label: "Updated By", fk: { relation: "app_user", displayColumn: "full_name" } }
+                { name: "gate_out_date", type: "date", label: "Gate Out Date" }
             ]
         },
         "transportation": {
@@ -264,8 +253,7 @@
                 { name: "transporter_name", type: "text", label: "Transporter Name" },
                 { name: "bilti_number", type: "text", label: "Bilti Number" },
                 { name: "bilti_date", type: "date", label: "Bilti Date" },
-                { name: "no_of_pieces", type: "number", label: "No of Pieces" },
-                { name: "updated_by", type: "uuid", label: "Updated By", fk: { relation: "app_user", displayColumn: "full_name" } }
+                { name: "no_of_pieces", type: "number", label: "No of Pieces" }
             ]
         },
         "warehouse": {
@@ -273,8 +261,7 @@
             fields: [
                 { name: "warehouse_id", type: "fk", label: "Warehouse Name", fk: { relation: "warehouse", displayColumn: "warehouse_name" } },
                 { name: "arrival_date", type: "date", label: "Arrival Date" },
-                { name: "gr_no", type: "text", label: "GR No" },
-                { name: "updated_by", type: "uuid", label: "Updated By", fk: { relation: "app_user", displayColumn: "full_name" } }
+                { name: "gr_no", type: "text", label: "GR No" }
             ]
         },
         "documents": {
@@ -1532,6 +1519,8 @@
                 shipment_id: shipmentId
             };
 
+            const { data: { user } } = await supabase.auth.getUser();
+
             if (stageName === 'ip_number') {
                 const references = [];
                 const ipReferenceInputs = form.querySelectorAll('input[name="ip_reference"]');
@@ -1544,10 +1533,8 @@
                 updates['references'] = references;
                 updates['issued_date'] = formData.get('issued_date');
             } else {
-                const fileUrlField = config.fields.find(f => f.name.endsWith('_url') || f.name.endsWith('_doc'));
                 for (const field of config.fields) {
                     const key = field.name;
-                    if (key === (fileUrlField ? fileUrlField.name : '')) continue;
 
                     let value = formData.get(key);
 
@@ -1581,6 +1568,19 @@
                         }
                     }
                 }
+            }
+
+            // Dynamically register the edit against the user based on stage
+            if (['non_negotiable_docs', 'original_docs'].includes(stageName)) {
+                updates['uploaded_by'] = user.id;
+            } else if (['bank_endorsement', 'gate_out', 'transportation', 'warehouse'].includes(stageName)) {
+                updates['updated_by'] = user.id;
+            } else if (stageName === 'award_shipment') {
+                updates['awarded_by'] = user.id;
+            } else if (stageName === 'availability_confirmation') {
+                updates['confirmed_by'] = user.id;
+            } else if (stageName === 'enlistment_verification') {
+                updates['verifier_id'] = user.id;
             }
 
             // Document upload removed - use centralized "Manage Documents" button instead
