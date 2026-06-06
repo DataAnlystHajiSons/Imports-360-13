@@ -2029,9 +2029,10 @@
             return;
         }
 
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         const { data, error } = await supabase.storage
             .from('shipment-docs')
-            .upload(`${shipmentId}/bank_charges/${file.name}`, file, {
+            .upload(`${shipmentId}/bank_charges/${sanitizedName}`, file, {
                 cacheControl: '3600',
                 upsert: true
             });
@@ -4697,8 +4698,9 @@ Direct Data Count: ${directData?.length || 0}`);
             
             showDocumentsMessage('Uploading document...', 'info');
             
-            // Upload file to Supabase Storage
-            const fileName = `${documentsShipmentId}/${Date.now()}_${file.name}`;
+            // Sanitize file name to prevent "Invalid key" error in Supabase Storage
+            const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const fileName = `${documentsShipmentId}/${Date.now()}_${sanitizedName}`;
             const { data: uploadData, error: uploadError } = await supabase
                 .storage
                 .from('shipment-docs')

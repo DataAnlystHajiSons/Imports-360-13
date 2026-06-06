@@ -185,8 +185,9 @@ async function handleDocumentUpload(e) {
     // Show loading
     showDocumentsMessage('Uploading document...', 'info');
     
-    // Upload file to Supabase Storage
-    const fileName = `${currentShipmentId}/${Date.now()}_${file.name}`;
+    // Sanitize file name to prevent "Invalid key" error in Supabase Storage
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileName = `${currentShipmentId}/${Date.now()}_${sanitizedName}`;
     const { data: uploadData, error: uploadError } = await supabase
       .storage
       .from('shipment-docs')
