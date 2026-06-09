@@ -538,6 +538,7 @@
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; font-size: 0.95rem;">
                 <div>
                   <p><strong>Reference Number:</strong><br><span style="color: ${shipmentData?.reference_code ? '#16A34A' : '#64748B'};">${shipmentData?.reference_code || 'N/A'}</span></p>
+                  <p><strong>Mode of Transport:</strong><br><span style="color: ${shipmentData?.mode_of_transport ? '#16A34A' : '#64748B'};">${shipmentData?.mode_of_transport ? (shipmentData.mode_of_transport.charAt(0).toUpperCase() + shipmentData.mode_of_transport.slice(1)) : 'N/A'}</span></p>
                   <p><strong>Term:</strong><br><span style="color: ${freightData.term ? '#16A34A' : '#64748B'};">${freightData.term || 'Pending'}</span></p>
                   <p><strong>Shipment From:</strong><br><span style="color: ${freightData.shipment_from ? '#16A34A' : '#64748B'};">${freightData.shipment_from || 'Pending'}</span></p>
                   <p><strong>Destination:</strong><br><span style="color: ${freightData.destination ? '#16A34A' : '#64748B'};">${freightData.destination || 'Pending'}</span></p>
@@ -551,18 +552,17 @@
                 <div>
                   <p><strong>Gross Weight:</strong><br><span style="color: ${freightData.gross_weight ? '#16A34A' : '#64748B'};">${freightData.gross_weight ? freightData.gross_weight + ' kg' : 'Pending'}</span></p>
                   <p><strong>Net Weight:</strong><br><span style="color: ${freightData.net_weight ? '#16A34A' : '#64748B'};">${freightData.net_weight ? freightData.net_weight + ' kg' : 'Pending'}</span></p>
-                  <p><strong>Chargeable Weight:</strong><br><span style="color: ${freightData.chargeable_weight ? '#16A34A' : '#64748B'};">${freightData.chargeable_weight ? freightData.chargeable_weight + ' kg' : 'Pending'}</span></p>
                 </div>
                 <div>
                   <p><strong>Type:</strong><br><span style="color: ${freightData.type ? '#16A34A' : '#64748B'};">${freightData.type || 'Pending'}</span></p>
                   ${freightData.type === 'Cartons' ? `
                     <p><strong>Number of Cartons:</strong><br><span style="color: ${freightData.no_of_cartoons ? '#16A34A' : '#64748B'};">${freightData.no_of_cartoons || 'Pending'}</span></p>
-                    <p><strong>Dimension:</strong><br><span style="color: ${freightData.dimension ? '#16A34A' : '#64748B'};">${freightData.dimension || 'Pending'}</span></p>
+                    <p><strong>Dimension:</strong><br><span style="color: ${freightData.dimension ? '#16A34A' : '#64748B'};">${freightData.dimension ? (freightData.dimension.toLowerCase().includes('cm') ? freightData.dimension : freightData.dimension + ' cm') : 'Pending'}</span></p>
                     <p><strong>Approx CBM:</strong><br><span style="color: ${freightData.approx_cbm ? '#16A34A' : '#64748B'};">${freightData.approx_cbm || 'Pending'}</span></p>
                   ` : freightData.type === 'Containers' ? `
                     <p><strong>No of Containers:</strong><br><span style="color: ${freightData.no_of_containers ? '#16A34A' : '#64748B'};">${freightData.no_of_containers || 'Pending'}</span></p>
                     <p><strong>Container Size:</strong><br><span style="color: ${freightData.container_size ? '#16A34A' : '#64748B'};">${freightData.container_size || 'Pending'}</span></p>
-                    <p><strong>Dimension:</strong><br><span style="color: ${freightData.dimension ? '#16A34A' : '#64748B'};">${freightData.dimension || 'N/A'}</span></p>
+                    <p><strong>Dimension:</strong><br><span style="color: ${freightData.dimension ? '#16A34A' : '#64748B'};">${freightData.dimension ? (freightData.dimension.toLowerCase().includes('cm') ? freightData.dimension : freightData.dimension + ' cm') : 'N/A'}</span></p>
                     <p><strong>Approx CBM:</strong><br><span style="color: ${freightData.approx_cbm ? '#16A34A' : '#64748B'};">${freightData.approx_cbm || 'N/A'}</span></p>
                   ` : `
                     <p><strong>Number of Cartons:</strong><br><span style="color: ${freightData.no_of_cartoons ? '#16A34A' : '#64748B'};">${freightData.no_of_cartoons || 'Pending'}</span></p>
