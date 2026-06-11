@@ -716,6 +716,8 @@
   }
 
   function renderComparisonGrid(responses, award) {
+    const shipmentId = document.getElementById('shipment-filter').value;
+    const shipment = allShipments.find(s => s.id === shipmentId);
     const container = document.getElementById('responses-container');
     if (responses.length === 0) {
       container.innerHTML = `
