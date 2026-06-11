@@ -802,8 +802,9 @@
                 <div class="metric-grid">
                     <div class="metric-item"><i class="fas fa-clock"></i> Transit: <span class="metric-value">${time} Days</span></div>
                     <div class="metric-item"><i class="fas fa-calendar-alt"></i> Arrival: <span class="metric-value">${res.tentative_arrival_date ? new Date(res.tentative_arrival_date).toLocaleDateString() : 'N/A'}</span></div>
-                    <div class="metric-item"><i class="fas fa-plane"></i> Schedule: <span class="metric-value">${res.flight_schedule || 'N/A'}</span></div>
-                    <div class="metric-item"><i class="fas fa-envelope-open-text"></i> Received: <span class="metric-value">${new Date(res.received_at).toLocaleDateString()}</span></div>
+                    <div class="metric-item"><i class="fas ${shipment && shipment.mode_of_transport && shipment.mode_of_transport.toLowerCase().includes('sea') ? 'fa-ship' : 'fa-plane'}"></i> ${shipment && shipment.mode_of_transport && shipment.mode_of_transport.toLowerCase().includes('sea') ? 'Shipping Co' : 'Airline'}: <span class="metric-value">${res.airline || 'N/A'}</span></div>
+                    <div class="metric-item"><i class="fas fa-calendar"></i> Schedule: <span class="metric-value">${res.flight_schedule || 'N/A'}</span></div>
+                    <div class="metric-item" style="grid-column: span 2;"><i class="fas fa-envelope-open-text"></i> Received: <span class="metric-value">${new Date(res.received_at).toLocaleDateString()}</span></div>
                 </div>
 
                 ${res.notes ? `<div style="font-size: 13px; color: #64748b; margin-bottom: 15px; font-style: italic;">"${res.notes}"</div>` : ''}
