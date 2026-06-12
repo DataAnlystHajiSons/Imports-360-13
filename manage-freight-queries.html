@@ -207,7 +207,7 @@
       .select(`
         *,
         shipment!inner(reference_code),
-        logistics_company!inner(name)
+        logistics_company!inner(name, contact_email)
       `);
 
     if (shipmentId) {
@@ -237,7 +237,7 @@
   function renderQueries(queries) {
     const container = document.getElementById('queries-container');
     if (queries.length === 0) {
-      container.innerHTML = '<table><thead><tr><th>Shipment</th><th>Logistics Company</th><th>Sent At</th></tr></thead><tbody><tr><td colspan="3" style="text-align:center">No queries found for the selected filters.</td></tr></tbody></table>';
+      container.innerHTML = '<table><thead><tr><th>Shipment</th><th>Logistics Company</th><th>Sent At</th><th style="text-align: center;">Actions</th></tr></thead><tbody><tr><td colspan="4" style="text-align:center">No queries found for the selected filters.</td></tr></tbody></table>';
       return;
     }
 
@@ -248,6 +248,7 @@
             <th>Shipment</th>
             <th>Logistics Company</th>
             <th>Sent At</th>
+            <th style="text-align: center;">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -258,6 +259,14 @@
           <td>${q.shipment.reference_code}</td>
           <td>${q.logistics_company.name}</td>
           <td>${new Date(q.sent_at).toLocaleString()}</td>
+          <td style="text-align: center; display: flex; gap: 8px; justify-content: center;">
+            <button class="button-outline copy-link-btn" style="padding: 6px 12px; font-size: 13px;" data-id="${q.id}" title="Copy submission link for this forwarder">
+               <i class="fas fa-link"></i> Copy Link
+            </button>
+            <button class="button resend-email-btn" style="padding: 6px 12px; font-size: 13px; background: linear-gradient(135deg, var(--accent-color) 0%, var(--highlight-color) 100%);" data-id="${q.id}" data-email="${q.logistics_company.contact_email || ''}" title="Resend email notification to this forwarder">
+               <i class="fas fa-paper-plane"></i> Resend Email
+            </button>
+          </td>
         </tr>
       `;
     });
@@ -266,6 +275,67 @@
       </table>
     `;
     container.innerHTML = html;
+
+    // Attach click listeners to copy link buttons
+    container.querySelectorAll('.copy-link-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const button = e.target.closest('.copy-link-btn');
+            const queryId = button.dataset.id;
+            const quoteUrl = `${window.location.origin}/quote-submission.html?freight_query_id=${queryId}`;
+            
+            navigator.clipboard.writeText(quoteUrl).then(() => {
+                const origText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                button.style.borderColor = '#10b981';
+                button.style.color = '#10b981';
+                setTimeout(() => {
+                    button.innerHTML = origText;
+                    button.style.borderColor = '';
+                    button.style.color = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Could not copy link to clipboard automatically. Link is: ' + quoteUrl);
+            });
+        });
+    });
+
+    // Attach click listeners to resend email buttons
+    container.querySelectorAll('.resend-email-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const button = e.target.closest('.resend-email-btn');
+            const queryId = button.dataset.id;
+            const email = button.dataset.email;
+            
+            if (!email || email === 'null' || email === 'undefined') {
+                alert('This logistics company does not have a contact email configured.');
+                return;
+            }
+
+            if (confirm(`Are you sure you want to resend the freight query email to ${email}?`)) {
+                const origText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resending...';
+                
+                try {
+                    const quoteUrl = `${window.location.origin}/quote-submission.html?freight_query_id=${queryId}`;
+                    const { error } = await supabase.functions.invoke('send-freight-query-email', {
+                        body: { email: email, quote_url: quoteUrl }
+                    });
+                    
+                    if (error) throw error;
+                    
+                    alert('Email re-sent successfully!');
+                } catch (err) {
+                    console.error('Error resending email:', err);
+                    alert('Failed to resend email: ' + err.message);
+                } finally {
+                    button.disabled = false;
+                    button.innerHTML = origText;
+                }
+            }
+        });
+    });
   }
   
   function clearFilters() {
