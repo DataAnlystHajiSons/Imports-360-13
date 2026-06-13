@@ -390,6 +390,12 @@
 
         const currentStageIndex = STAGE_ORDER.indexOf(data.current_stage);
 
+        // Auto-complete shipment if progress is 100% (final stage 'bills' is reached) and status is not yet completed
+        if (currentStageIndex === STAGE_ORDER.length - 1 && data.status !== 'completed') {
+            await supabase.from('shipment').update({ status: 'completed' }).eq('id', shipmentId);
+            data.status = 'completed'; // Update local status for instant UI sync
+        }
+
         // Update center hub
         document.querySelector('.shipment-id').textContent = data.reference_code;
         const productCount = data.shipment_products.length;

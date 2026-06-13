@@ -218,6 +218,18 @@ async function loadShipments(searchTerm = '', filters = {}) {
     const totalCount = s.total_milestones_count || 24;
     const completedCount = s.completed_milestones_count || 0;
     const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    
+    // Auto-complete shipment if progress is 100% and status is not yet completed
+    if (progressPercent === 100 && s.status !== 'completed') {
+        supabase.from('shipment')
+            .update({ status: 'completed' })
+            .eq('id', s.id)
+            .then(({ error }) => {
+                if (error) console.error('Failed to auto-complete shipment:', error);
+                else console.log(`Shipment ${s.reference_code} automatically marked as completed.`);
+            });
+        s.status = 'completed'; // Update local status for instant UI sync
+    }
     const progressBarHtml = `
       <div class="progress-bar-container" style="width: 100%; max-width: 150px;">
         <div class="progress-header" style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
