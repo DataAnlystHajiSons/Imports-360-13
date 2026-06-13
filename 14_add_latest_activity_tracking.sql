@@ -283,8 +283,8 @@ SELECT
     -- bank
     b.id AS bank_id,
     b.name AS bank_name,
-    b.branch AS bank_branch,
-    b.address AS bank_address,
+    b.branch_name AS bank_branch,
+    b.branch_address AS bank_address,
     
     -- documents view fkeys
     dtca.clearing_agent_id,
@@ -321,7 +321,7 @@ SELECT
     23 AS total_milestones_count,
     
     -- product varieties
-    (SELECT jsonb_agg(jsonb_build_object('id', pv.id, 'name', pv.name, 'supplier_id', pv.supplier_id, 'supplier', jsonb_build_object('name', sup.name))) FROM public.shipment_products sp JOIN public.product_variety pv ON sp.product_variety_id = pv.id JOIN public.supplier sup ON pv.supplier_id = sup.id WHERE sp.shipment_id = s.id) AS product_variety
+    (SELECT jsonb_agg(jsonb_build_object('product_name', pv.product_name, 'variety_name', pv.variety_name, 'supplier', jsonb_build_object('name', sup.name))) FROM public.shipment_products sp JOIN public.product_variety pv ON sp.product_variety_id = pv.id JOIN public.supplier sup ON pv.supplier_id = sup.id WHERE sp.shipment_id = s.id) AS product_variety
 FROM
     public.shipment s
 LEFT JOIN
@@ -332,6 +332,63 @@ LEFT JOIN
     public.docs_to_clearing_agent dtca ON s.id = dtca.shipment_id
 LEFT JOIN
     public.clearing_agent ca ON dtca.clearing_agent_id = ca.id;
+
+
+-- 7. Recreate the public.filter_shipments function that was dropped by CASCADE
+DROP FUNCTION IF EXISTS public.filter_shipments(text,text,text,text,text,text,text,text,text,text,text);
+
+CREATE OR REPLACE FUNCTION public.filter_shipments(
+  p_search_term TEXT DEFAULT NULL,
+  p_supplier_id TEXT DEFAULT NULL,
+  p_clearing_agent_id TEXT DEFAULT NULL,
+  p_bank_id TEXT DEFAULT NULL,
+  p_status TEXT DEFAULT NULL,
+  p_shipment_type TEXT DEFAULT NULL,
+  p_commodity TEXT DEFAULT NULL,
+  p_lc_number TEXT DEFAULT NULL,
+  p_product_name TEXT DEFAULT NULL,
+  p_variety_name TEXT DEFAULT NULL,
+  p_mode_of_transport TEXT DEFAULT NULL
+) RETURNS SETOF public.v_shipments_with_all_details AS $$
+BEGIN 
+  RETURN QUERY 
+  SELECT * FROM public.v_shipments_with_all_details s 
+  WHERE 
+    (p_search_term IS NULL OR p_search_term = '' OR 
+     s.reference_code ILIKE '%' || p_search_term || '%' OR 
+     EXISTS (
+       SELECT 1 
+       FROM jsonb_to_recordset(s.product_variety) AS x(product_name TEXT, variety_name TEXT, supplier JSONB)
+       WHERE x.product_name ILIKE '%' || p_search_term || '%' OR x.variety_name ILIKE '%' || p_search_term || '%' OR (x.supplier->>'name') ILIKE '%' || p_search_term || '%'
+     )
+    ) AND
+    (p_supplier_id IS NULL OR p_supplier_id = '' OR EXISTS (
+       SELECT 1 
+       FROM jsonb_to_recordset(s.product_variety) AS x(supplier_id TEXT)
+       WHERE x.supplier_id = p_supplier_id
+    )) AND
+    (p_clearing_agent_id IS NULL OR p_clearing_agent_id = '' OR s.clearing_agent_id::text = p_clearing_agent_id) AND
+    (p_bank_id IS NULL OR p_bank_id = '' OR s.bank_id::text = p_bank_id) AND
+    (p_status IS NULL OR p_status = '' OR s.status::text = p_status) AND
+    (p_shipment_type IS NULL OR p_shipment_type = '' OR s.type::text = p_shipment_type) AND
+    (p_commodity IS NULL OR p_commodity = '' OR EXISTS (
+       SELECT 1 
+       FROM jsonb_to_recordset(s.product_variety) AS x(commodity_name TEXT)
+       WHERE x.commodity_name = p_commodity
+    )) AND
+    (p_lc_number IS NULL OR p_lc_number = '' OR s.lc_number ILIKE '%' || p_lc_number || '%') AND
+    (p_product_name IS NULL OR p_product_name = '' OR EXISTS (
+       SELECT 1 
+       FROM jsonb_to_recordset(s.product_variety) AS x(product_name TEXT)
+       WHERE x.product_name ILIKE '%' || p_product_name || '%'
+    )) AND
+    (p_variety_name IS NULL OR p_variety_name = '' OR EXISTS (
+       SELECT 1 
+       FROM jsonb_to_recordset(s.product_variety) AS x(variety_name TEXT)
+       WHERE x.variety_name ILIKE '%' || p_variety_name || '%'
+    )) AND
+    (p_mode_of_transport IS NULL OR p_mode_of_transport = '' OR s.mode_of_transport::text = p_mode_of_transport); 
+END; $$ LANGUAGE plpgsql STABLE;
 
 -- Refresh schema cache
 NOTIFY pgrst, 'reload schema';
