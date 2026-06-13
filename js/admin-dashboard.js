@@ -202,7 +202,7 @@ async function loadShipments(searchTerm = '', filters = {}) {
     const supplierName = s.supplier_name || 'N/A';
 
     // Generate stage badge
-    const stageBadge = getStagebadge(s.current_stage);
+    const stageBadge = getStagebadge(s.latest_activity_stage || s.current_stage);
     const statusBadge = getStatusBadge(s.status);
     const lcDisplay = s.lc_number ? `<span class="lc-number">${s.lc_number}</span>` : `<span class="lc-pending">Not assigned</span>`;
     
