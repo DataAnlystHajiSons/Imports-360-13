@@ -8,6 +8,8 @@ ALTER TABLE public.shipment ADD COLUMN IF NOT EXISTS latest_activity_stage text;
 ALTER TABLE public.shipment ADD COLUMN IF NOT EXISTS latest_activity_at timestamp with time zone DEFAULT now();
 
 -- 2. Update advance_stage function to log stage transitions as latest activity
+DROP FUNCTION IF EXISTS public.advance_stage(uuid, public.stage, jsonb) CASCADE;
+
 CREATE OR REPLACE FUNCTION public.advance_stage(
   p_shipment_id uuid,
   p_to_stage public.stage,
