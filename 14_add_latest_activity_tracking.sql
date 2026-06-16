@@ -272,6 +272,7 @@ SELECT
     s.created_by,
     s.latest_activity_stage,
     s.latest_activity_at,
+    (SELECT sup.name FROM public.shipment_products sp JOIN public.product_variety pv ON sp.product_variety_id = pv.id JOIN public.supplier sup ON pv.supplier_id = sup.id WHERE sp.shipment_id = s.id LIMIT 1) AS supplier_name,
     
     -- letter of credit
     lc.id AS lc_id,
