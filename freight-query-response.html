@@ -735,13 +735,14 @@
         const normalizedFreight = freight * (r.freight_exchange_rate || 1);
         const normalizedDO = (r.do_charges || 0) * (r.do_exchange_rate || 1);
         const normalizedOther = (r.other_charges || 0) * (r.other_exchange_rate || 1);
-        
-        return { 
-            ...r, 
-            mainAmount: freight, 
+        const normalizedContainer = (r.container_charges || 0) * (r.container_exchange_rate || 1);
+
+        return {
+            ...r,
+            mainAmount: freight,
             mainCurrency: r.freight_currency || 'USD',
             normalizedValue: normalizedFreight,
-            totalNormalized: normalizedFreight + normalizedDO + normalizedOther
+            totalNormalized: normalizedFreight + normalizedDO + normalizedOther + normalizedContainer
         };
     });
 
@@ -785,6 +786,11 @@
                         <div style="display: flex; justify-content: space-between; color: #78350f;">
                             <span>Freight:</span> <span>${getSym(res.previous_quote_data.freight_currency)} ${res.previous_quote_data.freight_charges?.toLocaleString() || '0'}</span>
                         </div>
+                        ${res.previous_quote_data.container_charges ? `
+                        <div style="display: flex; justify-content: space-between; color: #78350f;">
+                            <span>Container Charges:</span> <span>${getSym(res.previous_quote_data.container_currency || 'USD')} ${res.previous_quote_data.container_charges?.toLocaleString() || '0'}</span>
+                        </div>
+                        ` : ''}
                         <div style="display: flex; justify-content: space-between; color: #78350f;">
                             <span>DO Charges:</span> <span>${getSym(res.previous_quote_data.do_currency)} ${res.previous_quote_data.do_charges?.toLocaleString() || '0'}</span>
                         </div>
@@ -794,6 +800,7 @@
                     </div>
                     ` : ''}
                     <div class="breakdown-row"><span>Freight:</span> <strong>${getSym(res.freight_currency)} ${res.freight_charges?.toLocaleString() || '0'}</strong></div>
+                    ${res.container_charges ? `<div class="breakdown-row"><span>Container Charges:</span> <strong>${getSym(res.container_currency)} ${res.container_charges?.toLocaleString() || '0'}</strong></div>` : ''}
                     <div class="breakdown-row"><span>DO Charges:</span> <strong>${getSym(res.do_currency)} ${res.do_charges?.toLocaleString() || '0'}</strong></div>
                     <div class="breakdown-row"><span>Other Charges:</span> <strong>${getSym(res.other_currency)} ${res.other_charges?.toLocaleString() || '0'}</strong></div>
                     <div class="breakdown-row" style="border-top: 1px dashed #e2e8f0; margin-top: 5px; padding-top: 5px; font-weight: 700;">
