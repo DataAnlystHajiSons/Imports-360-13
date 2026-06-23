@@ -117,6 +117,36 @@ $$ LANGUAGE plpgsql;
 -- 4. Recreate triggers on all stage tables to fire BEFORE INSERT OR UPDATE
 -- This ensures that initial inserts are also registered as activities!
 
+-- Forecast
+DROP TRIGGER IF EXISTS update_forecast_updated_at ON public.forecast;
+CREATE TRIGGER update_forecast_updated_at
+    BEFORE INSERT OR UPDATE ON public.forecast
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Enlistment Verification
+DROP TRIGGER IF EXISTS update_enlistment_verification_updated_at ON public.enlistment_verification;
+CREATE TRIGGER update_enlistment_verification_updated_at
+    BEFORE INSERT OR UPDATE ON public.enlistment_verification
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Availability Confirmation
+DROP TRIGGER IF EXISTS update_availability_confirmation_updated_at ON public.availability_confirmation;
+CREATE TRIGGER update_availability_confirmation_updated_at
+    BEFORE INSERT OR UPDATE ON public.availability_confirmation
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Bank Debit Advice
+DROP TRIGGER IF EXISTS update_bank_debit_advice_updated_at ON public.bank_debit_advice;
+CREATE TRIGGER update_bank_debit_advice_updated_at
+    BEFORE INSERT OR UPDATE ON public.bank_debit_advice
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Good Declaration
+DROP TRIGGER IF EXISTS update_good_declaration_updated_at ON public.good_declaration;
+CREATE TRIGGER update_good_declaration_updated_at
+    BEFORE INSERT OR UPDATE ON public.good_declaration
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
 -- Proforma Invoice
 DROP TRIGGER IF EXISTS update_proforma_invoice_updated_at ON public.proforma_invoice;
 CREATE TRIGGER update_proforma_invoice_updated_at
