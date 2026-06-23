@@ -1045,6 +1045,9 @@
 
         if (error) throw error;
 
+        const shipment = allShipments.find(s => s.id === selectedShipmentId);
+        const shipmentRef = shipment ? shipment.reference_code : '';
+
         // Process emails sequentially to avoid rate limits (e.g., Resend 2 emails/sec limit)
         const results = [];
         for (const newQuery of newQueries) {
@@ -1055,7 +1058,8 @@
               const { error } = await supabase.functions.invoke('send-freight-query-email', {
                 body: { 
                   email: company.contact_email,
-                  quote_url: quoteUrl
+                  quote_url: quoteUrl,
+                  shipment_ref: shipmentRef
                 }
               });
               

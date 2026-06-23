@@ -14,15 +14,16 @@ serve(async (req) => {
 
   try {
     console.log('Function invoked');
-    const { email, quote_url, is_revision } = await req.json()
-    console.log('Request body:', { email, quote_url, is_revision });
+    const { email, quote_url, is_revision, shipment_ref } = await req.json()
+    console.log('Request body:', { email, quote_url, is_revision, shipment_ref });
 
     if (!RESEND_API_KEY) {
       throw new Error('RESEND_API_KEY is not set.');
     }
 
     const isRevision = !!is_revision;
-    const emailSubject = isRevision ? 'Revision Requested: Freight Query - Imports 360' : 'New Freight Query - Imports 360';
+    const refPrefix = shipment_ref ? `[${shipment_ref}] ` : '';
+    const emailSubject = isRevision ? `${refPrefix}Revision Requested: Freight Query - Imports 360` : `${refPrefix}New Freight Query - Imports 360`;
     const emailHeading = isRevision ? 'Revision Requested for Freight Query' : 'New Freight Query';
     const emailDescription = isRevision 
       ? 'Our procurement team has requested a revision on your previously submitted quote. Your quotation form has been successfully unlocked for editing. Please update your rates and submit your revised quote using the button below:' 

@@ -263,7 +263,7 @@
             <button class="button-outline copy-link-btn" style="padding: 6px 12px; font-size: 13px;" data-id="${q.id}" title="Copy submission link for this forwarder">
                <i class="fas fa-link"></i> Copy Link
             </button>
-            <button class="button resend-email-btn" style="padding: 6px 12px; font-size: 13px; background: linear-gradient(135deg, var(--accent-color) 0%, var(--highlight-color) 100%);" data-id="${q.id}" data-email="${q.logistics_company.contact_email || ''}" title="Resend email notification to this forwarder">
+            <button class="button resend-email-btn" style="padding: 6px 12px; font-size: 13px; background: linear-gradient(135deg, var(--accent-color) 0%, var(--highlight-color) 100%);" data-id="${q.id}" data-email="${q.logistics_company.contact_email || ''}" data-ref="${q.shipment.reference_code}" title="Resend email notification to this forwarder">
                <i class="fas fa-paper-plane"></i> Resend Email
             </button>
           </td>
@@ -319,8 +319,9 @@
                 
                 try {
                     const quoteUrl = `${window.location.origin}/quote-submission.html?freight_query_id=${queryId}`;
+                    const shipmentRef = button.dataset.ref;
                     const { error } = await supabase.functions.invoke('send-freight-query-email', {
-                        body: { email: email, quote_url: quoteUrl }
+                        body: { email: email, quote_url: quoteUrl, shipment_ref: shipmentRef }
                     });
                     
                     if (error) throw error;

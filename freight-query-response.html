@@ -852,8 +852,12 @@
                     
                     if(email && email !== 'null' && email !== 'undefined') {
                         const quoteUrl = `${window.location.origin}/quote-submission.html?freight_query_id=${queryId}`;
+                        const shipmentId = document.getElementById('shipment-filter').value;
+                        const shipment = allShipments.find(s => s.id === shipmentId);
+                        const shipmentRef = shipment ? shipment.reference_code : '';
+
                         await supabase.functions.invoke('send-freight-query-email', {
-                            body: { email: email, quote_url: quoteUrl, is_revision: true }
+                            body: { email: email, quote_url: quoteUrl, is_revision: true, shipment_ref: shipmentRef }
                         });
                     }
                     alert('Revision requested successfully.');
