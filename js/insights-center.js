@@ -279,11 +279,119 @@ window.onload = async () => {
 
   if (!currentRef) {
     document.getElementById('diagnostics-container').innerHTML = `
-      <div class="empty-state">
-        <i class="fas fa-exclamation-circle" style="color: red;"></i>
-        <h3>Missing Parameters</h3>
-        <p>You must provide a shipment reference query param (e.g. <code>?ref=D-635</code>) to run the diagnostic dashboard.</p>
-      </div>`;
+      <div style="max-width: 650px; margin: 60px auto; text-align: center; background: white; padding: 45px 35px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); border: 1px solid var(--border-color);">
+          <div style="font-size: 54px; color: var(--primary-color); margin-bottom: 24px; animation: bounce 2s infinite;"><i class="fas fa-search-location"></i></div>
+          <h2 style="margin: 0 0 12px 0; color: #1E293B; font-weight: 800; font-size: 24px;">Analyze Shipment Timeline</h2>
+          <p style="margin: 0 0 32px 0; color: #64748B; font-size: 15px; line-height: 1.6;">Type or select any active shipment below to load its interactive timeline, pinpoint critical bottlenecks, and examine operational warnings.</p>
+          
+          <!-- Autocomplete Dropdown -->
+          <div class="search-dropdown-container" style="position: relative; text-align: left;">
+              <div style="position: relative;">
+                  <i class="fas fa-search" style="position: absolute; left: 16px; top: 16px; color: #94A3B8; font-size: 16px;"></i>
+                  <input type="text" id="shipment-search-input" placeholder="Type shipment reference code (e.g. D-656)..." style="width: 100%; padding: 14px 16px 14px 44px; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 15px; outline: none; box-sizing: border-box; transition: border-color 0.2s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);" onfocus="this.style.borderColor='var(--primary-color)'" onblur="this.style.borderColor='#CBD5E1'">
+              </div>
+              <div id="shipment-dropdown-list" style="display: none; position: absolute; left: 0; right: 0; top: 100%; margin-top: 8px; background: white; border: 1px solid #E2E8F0; border-radius: 10px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 15px 25px -5px rgba(0,0,0,0.1); padding: 5px 0;">
+                  <div style="padding: 15px; text-align: center; color: #94A3B8; font-size: 14px;"><i class="fas fa-spinner fa-spin" style="margin-right: 6px;"></i> Loading active shipments...</div>
+              </div>
+          </div>
+      </div>
+      
+      <style>
+         @keyframes bounce {
+           0%, 100% { transform: translateY(0); }
+           50% { transform: translateY(-6px); }
+         }
+         .dropdown-item {
+           padding: 12px 20px;
+           font-size: 15px;
+           color: #334155;
+           cursor: pointer;
+           display: flex;
+           align-items: center;
+           gap: 12px;
+           transition: background 0.15s;
+         }
+         .dropdown-item:hover {
+           background-color: #F1F5F9;
+           color: var(--primary-color);
+         }
+         .dropdown-item i {
+           color: #94A3B8;
+         }
+         .dropdown-item:hover i {
+           color: var(--primary-color);
+         }
+      </style>`;
+
+    // Fetch shipments to populate the selector
+    try {
+        const { data: shipments, error } = await supabase
+            .from('v_shipments_with_all_details')
+            .select('id, reference_code');
+            
+        if (error) throw error;
+        
+        // Local deduplication of view rows
+        const uniqueShipmentsMap = new Map();
+        shipments.forEach(s => {
+            if(!uniqueShipmentsMap.has(s.id)) uniqueShipmentsMap.set(s.id, s);
+        });
+        const uniqueShipments = Array.from(uniqueShipmentsMap.values());
+        
+        const searchInput = document.getElementById('shipment-search-input');
+        const dropdownList = document.getElementById('shipment-dropdown-list');
+        
+        function renderItems(filterText) {
+            const lowerFilter = filterText.toLowerCase();
+            const filtered = uniqueShipments.filter(s => s.reference_code.toLowerCase().includes(lowerFilter));
+            
+            if (filtered.length === 0) {
+                dropdownList.innerHTML = `<div style="padding: 15px; text-align: center; color: #94A3B8; font-size: 14px;"><i class="fas fa-search"></i> No matching shipments found</div>`;
+                return;
+            }
+            
+            let html = '';
+            filtered.forEach(s => {
+                html += `
+                  <div class="dropdown-item" data-ref="${s.reference_code}">
+                     <i class="fas fa-ship"></i>
+                     <strong>${s.reference_code}</strong>
+                  </div>`;
+            });
+            dropdownList.innerHTML = html;
+            
+            // Attach item clicks
+            dropdownList.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('mousedown', (e) => {
+                    const ref = e.currentTarget.dataset.ref;
+                    const tabParam = urlParams.get('tab') ? `&tab=${urlParams.get('tab')}` : '';
+                    window.location.href = `insights-center.html?ref=${ref}${tabParam}`;
+                });
+            });
+        }
+        
+        // Show dropdown on focus
+        searchInput.addEventListener('focus', () => {
+            dropdownList.style.display = 'block';
+            renderItems(searchInput.value);
+        });
+        
+        // Hide dropdown on blur with delay to register clicks
+        searchInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                dropdownList.style.display = 'none';
+            }, 200);
+        });
+        
+        // Filter elements on keyup
+        searchInput.addEventListener('input', () => {
+            renderItems(searchInput.value);
+        });
+        
+    } catch (err) {
+        console.error('Error populating shipment selector:', err);
+    }
+
     if (loader) loader.style.display = 'none';
     return;
   }
