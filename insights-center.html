@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Imports 360 - Insights & Alerts Center</title>
+  <title>Imports 360 - Shipment Diagnostics & Investigation</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="css/insights-center.css">
+  <link rel="stylesheet" href="css/shipment-diagnostics.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
@@ -29,12 +29,6 @@
           <a href="admin-dashboard.html" class="nav-link">
             <i class="fas fa-home icon"></i>
             <span class="text">Dashboard</span>
-          </a>
-        </li>
-        <li>
-          <a href="insights-center.html" class="nav-link active">
-            <i class="fas fa-chart-line icon"></i>
-            <span class="text">Insights Center</span>
           </a>
         </li>
         <li>
@@ -124,63 +118,96 @@
     <header class="main-header" style="margin-bottom: 30px;">
       <div class="header-title">
         <button class="back-button" onclick="window.history.back();"><i class="fas fa-arrow-left"></i></button>
-        <h1>Insights & Alerts Center</h1>
+        <h1>Shipment Diagnostics</h1>
       </div>
     </header>
 
-    <div class="container">
-      <!-- Top Navigation Tabs -->
-      <div class="tabs-container">
-        <button class="tab-btn active" id="tab-alerts" onclick="switchTab('alerts')">
-          <i class="fas fa-exclamation-triangle"></i>
-          <span>Critical Alerts</span>
-          <span class="badge" id="badge-alerts">0</span>
-        </button>
-        <button class="tab-btn" id="tab-warnings" onclick="switchTab('warnings')">
-          <i class="fas fa-exclamation-circle"></i>
-          <span>Business Warnings</span>
-          <span class="badge" id="badge-warnings">0</span>
-        </button>
-        <button class="tab-btn" id="tab-insights" onclick="switchTab('insights')">
-          <i class="fas fa-lightbulb"></i>
-          <span>Operational Insights</span>
-          <span class="badge" id="badge-insights">0</span>
-        </button>
-      </div>
-
-      <!-- Tab Content Panels -->
-      <!-- ALERTS GRID -->
-      <div class="tab-content active" id="content-alerts">
-        <div class="grid-container" id="grid-alerts">
-          <div class="empty-state">
-            <i class="fas fa-spinner fa-spin" style="font-size: 32px;"></i>
-            <p>Loading alerts...</p>
+    <div class="container" id="diagnostics-container">
+      <!-- High Level Shipment Card -->
+      <div class="shipment-header-card">
+        <h2 id="header-ref"><i class="fas fa-microscope"></i> Investigating Shipment...</h2>
+        <div class="shipment-meta-grid">
+          <div class="meta-item">
+            <span class="label">Product</span>
+            <span class="value" id="meta-product">Loading...</span>
+          </div>
+          <div class="meta-item">
+            <span class="label">Variety</span>
+            <span class="value" id="meta-variety">Loading...</span>
+          </div>
+          <div class="meta-item">
+            <span class="label">Supplier</span>
+            <span class="value" id="meta-supplier">Loading...</span>
+          </div>
+          <div class="meta-item">
+            <span class="label">Workflow Progress</span>
+            <span class="value" id="meta-progress">Loading...</span>
           </div>
         </div>
       </div>
 
-      <!-- WARNINGS GRID -->
-      <div class="tab-content" id="content-warnings">
-        <div class="grid-container" id="grid-warnings">
-          <div class="empty-state">
-            <i class="fas fa-spinner fa-spin" style="font-size: 32px;"></i>
-            <p>Loading warnings...</p>
+      <!-- Split Pane Container -->
+      <div class="split-pane">
+        
+        <!-- Left Pane: Timeline & Bottleneck details -->
+        <div class="left-pane">
+          <div class="timeline-section">
+            <h3><i class="fas fa-hourglass-half"></i> Current Stage & Bottleneck Analysis</h3>
+            <div class="diagnostics-timeline" id="timeline-list">
+              <!-- Dynamically rendered timeline with delay highlights -->
+              <p class="empty-state">Constructing timeline...</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- INSIGHTS GRID -->
-      <div class="tab-content" id="content-insights">
-        <div class="grid-container" id="grid-insights">
-          <div class="empty-state">
-            <i class="fas fa-spinner fa-spin" style="font-size: 32px;"></i>
-            <p>Loading operational insights...</p>
+        <!-- Right Pane: Tabs with alert breakdowns -->
+        <div class="right-pane">
+          <!-- Small Tab Bar -->
+          <div class="tabs-container">
+            <button class="tab-btn active" id="tab-alerts" onclick="switchTab('alerts')">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>Alerts</span>
+              <span class="badge" id="badge-alerts">0</span>
+            </button>
+            <button class="tab-btn" id="tab-warnings" onclick="switchTab('warnings')">
+              <i class="fas fa-exclamation-circle"></i>
+              <span>Warnings</span>
+              <span class="badge" id="badge-warnings">0</span>
+            </button>
+            <button class="tab-btn" id="tab-insights" onclick="switchTab('insights')">
+              <i class="fas fa-lightbulb"></i>
+              <span>Insights</span>
+              <span class="badge" id="badge-insights">0</span>
+            </button>
           </div>
+
+          <!-- Tab Content Cards -->
+          <!-- ALERTS PANEL -->
+          <div class="tab-content active" id="content-alerts">
+            <div class="cards-container" id="container-alerts">
+              <!-- Alerts for this shipment -->
+            </div>
+          </div>
+
+          <!-- WARNINGS PANEL -->
+          <div class="tab-content" id="content-warnings">
+            <div class="cards-container" id="container-warnings">
+              <!-- Warnings for this shipment -->
+            </div>
+          </div>
+
+          <!-- INSIGHTS PANEL -->
+          <div class="tab-content" id="content-insights">
+            <div class="cards-container" id="container-insights">
+              <!-- Insights for this shipment -->
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
   </div>
 
-  <script type="module" src="js/insights-center.js?v=1.0"></script>
+  <script type="module" src="js/insights-center.js?v=2.0"></script>
 </body>
 </html>
