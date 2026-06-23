@@ -50,12 +50,11 @@ BEGIN
     SELECT COALESCE(
         jsonb_agg(
             jsonb_build_object(
-                'id', sp.id,
                 'product_variety_id', sp.product_variety_id,
                 'quantity', sp.quantity,
                 'rate', sp.rate,
                 'unit', sp.unit,
-                'variety_name', pv.name,
+                'variety_name', pv.variety_name,
                 'commodity_name', c.name
             )
         ), '[]'::jsonb
