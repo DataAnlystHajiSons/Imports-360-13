@@ -966,6 +966,7 @@
 
   const urlParams = new URLSearchParams(window.location.search);
   const shipmentId = urlParams.get("id");
+  const shipmentRef = urlParams.get("ref");
   let shipmentData = null;
 
   function getCurrencySymbol(currency) {
@@ -1405,12 +1406,12 @@
   // window.toggleStageCard = function(header, event) { ... };
 
   async function loadShipmentDetails() {
-    if (!shipmentId) {
-        document.getElementById("shipment-details-container").innerHTML = "<p>No shipment ID provided.</p>";
+    if (!shipmentId && !shipmentRef) {
+        document.getElementById("stages-container").innerHTML = "<p>No shipment ID or Reference Code provided.</p>";
         return;
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("shipment")
       .select(`
         *,
@@ -1437,8 +1438,15 @@
         transporter (*, updated_by(full_name)),
         warehouse_arrival (*, updated_by(full_name)),
         bills (*, updated_by(full_name))
-      `)
-      .eq("id", shipmentId);
+      `);
+
+    if (shipmentId) {
+        query = query.eq("id", shipmentId);
+    } else {
+        query = query.eq("reference_code", shipmentRef);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       document.getElementById("stages-container").innerHTML = `<p class=\"error-message\">Error loading shipment details: ${error.message}</p>`;
