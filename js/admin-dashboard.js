@@ -1552,15 +1552,18 @@ window.onload = async () => {
     }
 
     function handleAlertAction(type, referenceCode) {
-      window.location.href = `insights-center.html?tab=alerts`;
+      const refParam = referenceCode ? `&ref=${referenceCode}` : '';
+      window.location.href = `insights-center.html?tab=alerts${refParam}`;
     }
 
     function handleWarningAction(type, referenceCode) {
-      window.location.href = `insights-center.html?tab=warnings`;
+      const refParam = referenceCode ? `&ref=${referenceCode}` : '';
+      window.location.href = `insights-center.html?tab=warnings${refParam}`;
     }
 
     function handleInsightAction(type, referenceCode) {
-      window.location.href = `insights-center.html?tab=insights`;
+      const refParam = referenceCode ? `&ref=${referenceCode}` : '';
+      window.location.href = `insights-center.html?tab=insights${refParam}`;
     }
 
     async function initializeInsightsSection() {
