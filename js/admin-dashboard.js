@@ -1552,65 +1552,15 @@ window.onload = async () => {
     }
 
     function handleAlertAction(type, referenceCode) {
-      switch(type) {
-        case 'overdue':
-        case 'simple_alert':
-          if (referenceCode) {
-            window.location.href = `shipment-details.html?ref=${referenceCode}`;
-          } else {
-            showNotification('Navigating to shipment details', 'info');
-          }
-          break;
-        case 'lc_expiring':
-          if (referenceCode) {
-            window.location.href = `shipment-details.html?ref=${referenceCode}&focus=lc`;
-          } else {
-            showNotification('Opening LC management', 'info');
-          }
-          break;
-        case 'pending_docs':
-          document.getElementById('shipment-search').value = '';
-          loadShipments('', { status: 'active' });
-          showNotification('Filtered shipments requiring documentation', 'info');
-          break;
-        default:
-          showNotification('Opening detailed alert information', 'info');
-      }
+      window.location.href = `insights-center.html?tab=alerts`;
     }
 
     function handleWarningAction(type, referenceCode) {
-      switch(type) {
-        case 'supplier_capacity':
-          window.location.href = 'supplier-details.html';
-          break;
-        case 'stage_bottleneck':
-          loadShipments('', { status: 'active' });
-          showNotification('Showing active shipments to identify bottlenecks', 'info');
-          break;
-        case 'missing_details':
-          loadShipments('supplier details', { status: 'active' });
-          showNotification('Showing shipments needing supplier details', 'info');
-          break;
-        default:
-          showNotification('Opening detailed warning analysis', 'info');
-      }
+      window.location.href = `insights-center.html?tab=warnings`;
     }
 
     function handleInsightAction(type, referenceCode) {
-      switch(type) {
-        case 'performance':
-        case 'basic_stats':
-          showNotification('Opening performance analytics dashboard', 'info');
-          break;
-        case 'top_supplier':
-          window.location.href = 'supplier-details.html';
-          break;
-        case 'seasonal':
-          showNotification('Opening seasonal planning dashboard', 'info');
-          break;
-        default:
-          showNotification('Opening detailed insights analysis', 'info');
-      }
+      window.location.href = `insights-center.html?tab=insights`;
     }
 
     async function initializeInsightsSection() {
@@ -1642,17 +1592,15 @@ window.onload = async () => {
 
     // Enhanced view all functions
     function viewAllAlerts() {
-      document.getElementById('shipment-search').value = '';
-      loadShipments('', { status: 'active' });
-      showNotification('Showing all active shipments for alert analysis', 'info');
+      window.location.href = `insights-center.html?tab=alerts`;
     }
 
     function viewAllWarnings() {
-      showNotification('Opening comprehensive warnings dashboard', 'info');
+      window.location.href = `insights-center.html?tab=warnings`;
     }
 
     function viewAllInsights() {
-      showNotification('Opening business insights dashboard', 'info');
+      window.location.href = `insights-center.html?tab=insights`;
     }
 
     // Make insight functions globally available

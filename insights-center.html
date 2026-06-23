@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Imports 360 - Insights & Alerts Center</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/insights-center.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="loader-overlay" id="loader">
+    <div class="loader">
+      <div class="loader-dot"></div>
+      <div class="loader-dot"></div>
+      <div class="loader-dot"></div>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+     <div class="sidebar-header">
+      <img src="https://i.postimg.cc/j5K3DCyc/20250826-1802-Imports-360-Logo-simple-compose-01k3k7grx1f2fsmtvdcvwbx54s.png" alt="Logo" class="sidebar-logo">
+      <button class="sidebar-toggle">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul>
+        <li>
+          <a href="admin-dashboard.html" class="nav-link">
+            <i class="fas fa-home icon"></i>
+            <span class="text">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="insights-center.html" class="nav-link active">
+            <i class="fas fa-chart-line icon"></i>
+            <span class="text">Insights Center</span>
+          </a>
+        </li>
+        <li>
+          <a href="documents.html" class="nav-link">
+            <i class="fas fa-file-alt icon"></i>
+            <span class="text">Documents</span>
+          </a>
+        </li>
+        <li>
+          <a href="forecast.html" class="nav-link">
+            <i class="fas fa-bullhorn icon"></i>
+            <span class="text">Forecasts</span>
+          </a>
+        </li>
+        <li><a href="verification-list.html" class="nav-link"><i class="fas fa-check-double icon"></i><span class="text">Verification List</span></a></li>
+        <li>
+          <a href="#" class="nav-link has-submenu">
+            <i class="fas fa-box icon"></i>
+            <span class="text">Shipments</span>
+            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+          </a>
+          <ul class="submenu">
+            <li><a href="shipment_tracker.html" class="nav-link"><span class="text">Shipment Tracker</span></a></li>
+            <li><a href="shipment-details.html" class="nav-link"><span class="text">All Shipments</span></a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="product-details.html" class="nav-link">
+            <i class="fas fa-tags icon"></i>
+            <span class="text">Products</span>
+          </a>
+        </li>
+        <li>
+          <a href="supplier-details.html" class="nav-link">
+            <i class="fas fa-truck icon"></i>
+            <span class="text">Suppliers</span>
+          </a>
+        </li>
+        <li>
+          <a href="supplier-shipment-responses.html" class="nav-link">
+            <i class="fas fa-inbox icon"></i>
+            <span class="text">Supplier Responses</span>
+          </a>
+        </li>
+        <li>
+          <a href="bank-details.html" class="nav-link">
+            <i class="fas fa-university icon"></i>
+            <span class="text">Banks</span>
+          </a>
+        </li>
+        <li>
+          <a href="admin-payment-terms.html" class="nav-link">
+            <i class="fas fa-credit-card icon"></i>
+            <span class="text">Payment Terms</span>
+          </a>
+        </li>
+        <li>
+          <a href="clearing-agent-details.html" class="nav-link">
+            <i class="fas fa-user-shield icon"></i>
+            <span class="text">Clearing Agents</span>
+          </a>
+        </li>
+        <li>
+          <a href="warehouse-details.html" class="nav-link">
+            <i class="fas fa-warehouse icon"></i>
+            <span class="text">Warehouses</span>
+          </a>
+        </li>
+        <li><a href="logistic-cells.html" class="nav-link"><i class="fas fa-cubes icon"></i><span class="text">Logistic Cells</span></a></li>
+        <li>
+          <a href="manage-freight-queries.html" class="nav-link">
+            <i class="fas fa-ship icon"></i>
+            <span class="text">Manage Freight Queries</span>
+          </a>
+        </li>
+        <li>
+          <a href="freight-query-response.html" class="nav-link">
+            <i class="fas fa-envelope-open-text icon"></i>
+            <span class="text">Freight Query Responses</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="main-content">
+    <header class="main-header" style="margin-bottom: 30px;">
+      <div class="header-title">
+        <button class="back-button" onclick="window.history.back();"><i class="fas fa-arrow-left"></i></button>
+        <h1>Insights & Alerts Center</h1>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Top Navigation Tabs -->
+      <div class="tabs-container">
+        <button class="tab-btn active" id="tab-alerts" onclick="switchTab('alerts')">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>Critical Alerts</span>
+          <span class="badge" id="badge-alerts">0</span>
+        </button>
+        <button class="tab-btn" id="tab-warnings" onclick="switchTab('warnings')">
+          <i class="fas fa-exclamation-circle"></i>
+          <span>Business Warnings</span>
+          <span class="badge" id="badge-warnings">0</span>
+        </button>
+        <button class="tab-btn" id="tab-insights" onclick="switchTab('insights')">
+          <i class="fas fa-lightbulb"></i>
+          <span>Operational Insights</span>
+          <span class="badge" id="badge-insights">0</span>
+        </button>
+      </div>
+
+      <!-- Tab Content Panels -->
+      <!-- ALERTS GRID -->
+      <div class="tab-content active" id="content-alerts">
+        <div class="grid-container" id="grid-alerts">
+          <div class="empty-state">
+            <i class="fas fa-spinner fa-spin" style="font-size: 32px;"></i>
+            <p>Loading alerts...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- WARNINGS GRID -->
+      <div class="tab-content" id="content-warnings">
+        <div class="grid-container" id="grid-warnings">
+          <div class="empty-state">
+            <i class="fas fa-spinner fa-spin" style="font-size: 32px;"></i>
+            <p>Loading warnings...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- INSIGHTS GRID -->
+      <div class="tab-content" id="content-insights">
+        <div class="grid-container" id="grid-insights">
+          <div class="empty-state">
+            <i class="fas fa-spinner fa-spin" style="font-size: 32px;"></i>
+            <p>Loading operational insights...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/insights-center.js?v=1.0"></script>
+</body>
+</html>

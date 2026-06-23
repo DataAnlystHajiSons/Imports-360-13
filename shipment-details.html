@@ -1489,25 +1489,81 @@
     const summaryContainer = document.getElementById('shipment-summary');
     summaryContainer.innerHTML = `
       <h1><i class="fas fa-ship"></i> Shipment: ${shipmentData.reference_code}</h1>
-      <div class=\"summary-grid\">
-        <div class=\"summary-item\">
-          <span class=\"label\"><i class="fas fa-layer-group"></i> Current Stage</span>
-          <span class=\"value\">${shipmentData.current_stage.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span class="label"><i class="fas fa-layer-group"></i> Current Stage</span>
+          <span class="value">${shipmentData.current_stage.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
         </div>
-        <div class=\"summary-item\">
-          <span class=\"label\"><i class="fas fa-info-circle"></i> Status</span>
-          <span class=\"value\">${shipmentData.status.toUpperCase()}</span>
+        <div class="summary-item">
+          <span class="label"><i class="fas fa-info-circle"></i> Status</span>
+          <span class="value">${shipmentData.status.toUpperCase()}</span>
         </div>
-        <div class=\"summary-item\">
-          <span class=\"label\"><i class="fas fa-calendar-alt"></i> Created</span>
-          <span class=\"value\">${new Date(shipmentData.created_at).toLocaleDateString()}</span>
+        <div class="summary-item">
+          <span class="label"><i class="fas fa-calendar-alt"></i> Created</span>
+          <span class="value">${new Date(shipmentData.created_at).toLocaleDateString()}</span>
         </div>
-        <div class=\"summary-item\">
-          <span class=\"label\"><i class="fas fa-coins"></i> Shipment Value (${shipmentData.currency || 'USD'})</span>
-          <span class=\"value\">${symbol}${totalAmount.toFixed(2)}</span>
+        <div class="summary-item">
+          <span class="label"><i class="fas fa-coins"></i> Shipment Value (${shipmentData.currency || 'USD'})</span>
+          <span class="value">${symbol}${totalAmount.toFixed(2)}</span>
         </div>
       </div>
     `;
+
+    // Render contextual alert banner if arriving via alert/focus link
+    const focusParam = urlParams.get("focus");
+    const bannerContainer = document.getElementById('contextual-alert-banner');
+    if (focusParam && bannerContainer) {
+        let alertTitle = "Shipment Alert";
+        let alertMessage = "This shipment currently requires operational review.";
+        let alertClass = "warning-banner";
+        let alertIcon = "fa-exclamation-triangle";
+        
+        if (focusParam === 'overdue' || focusParam === 'stage_bottleneck' || focusParam === 'simple_alert') {
+            alertTitle = "Shipment Overdue Stage Alert";
+            alertMessage = `This shipment has exceeded its expected timeline duration on its current stage (<strong>${shipmentData.current_stage.replace(/_/g, ' ').toUpperCase()}</strong>). Please resolve any bottleneck.`;
+            alertClass = "critical-banner";
+            alertIcon = "fa-clock";
+        } else if (focusParam === 'lc_expiring') {
+            alertTitle = "Expiring Letter of Credit Alert";
+            alertMessage = "The Letter of Credit (LC) for this shipment is approaching its expiration threshold and requires immediate attention.";
+            alertClass = "critical-banner";
+            alertIcon = "fa-file-invoice-dollar";
+        } else if (focusParam === 'pending_docs' || focusParam === 'missing_details') {
+            alertTitle = "Pending Documentation Warning";
+            alertMessage = "This shipment is currently awaiting critical shipping or clearance documentation.";
+            alertClass = "warning-banner";
+            alertIcon = "fa-file-alt";
+        }
+        
+        bannerContainer.innerHTML = `
+          <div class="${alertClass}" style="
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 5px solid;
+            font-size: 15px;
+            line-height: 1.5;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+          ">
+            <div style="font-size: 24px;"><i class="fas \${alertIcon}"></i></div>
+            <div style="flex: 1;">
+              <strong style="display: block; font-size: 16px; margin-bottom: 3px;">\${alertTitle}</strong>
+              <span style="opacity: 0.9;">\${alertMessage}</span>
+            </div>
+          </div>
+        `;
+        
+        // Add specific CSS dynamically
+        const style = document.createElement('style');
+        style.innerHTML = `
+          .critical-banner { background-color: #FEF2F2; border-color: #EF4444; color: #991B1B; }
+          .warning-banner { background-color: #FFFBEB; border-color: #F59E0B; color: #92400E; }
+        `;
+        document.head.appendChild(style);
+    }
     
     // Insert progress timeline after summary
     const timelineHtml = renderProgressTimeline();
@@ -1727,6 +1783,7 @@
       </div>
     </header>
     <div class="container" style="max-width: 100%; padding: 0; background: transparent; box-shadow: none;">
+      <div id="contextual-alert-banner"></div>
       <div id="shipment-summary" class="shipment-header"></div>
       <div id="supplier-payment-container"></div>
       <h2 style="color: #1e293b; margin: 30px 0 20px 0; font-size: 1.5rem; font-weight: 700;"><i class="fas fa-route"></i> Shipment Stages</h2>
