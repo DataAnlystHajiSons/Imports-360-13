@@ -10,6 +10,14 @@ FOR UPDATE TO anon
 USING (is_unlocked = true)
 WITH CHECK (true); -- Allows the updated row to have is_unlocked = false (relocked)
 
+-- 1b. Add SELECT policy to allow anonymous clients to see quotes (PostgREST UPDATE requires SELECT visibility)
+DROP POLICY IF EXISTS "Allow anon select on freight_quote_response" ON public.freight_quote_response;
+
+CREATE POLICY "Allow anon select on freight_quote_response"
+ON public.freight_quote_response
+FOR SELECT TO anon
+USING (true);
+
 -- 2. Make the RPC more robust by checking v_existing_quote.id IS NOT NULL instead of FOUND
 CREATE OR REPLACE FUNCTION public.get_freight_quote_details(p_freight_query_id UUID)
 RETURNS JSONB
