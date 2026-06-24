@@ -307,7 +307,7 @@
         console.log('🔍 Checking for existing quote submissions...');
         const { data: existingQuote, error: checkError } = await supabase
           .from('freight_quote_response')
-          .select('id, name_of_your_company, received_at')
+          .select('id, name_of_your_company, received_at, is_unlocked')
           .eq('freight_query_id', freightQueryId)
           .maybeSingle();
 
@@ -320,7 +320,7 @@
           return;
         }
 
-        if (existingQuote) {
+        if (existingQuote && !existingQuote.is_unlocked) {
           console.log('⚠️ Quote already submitted by:', existingQuote.name_of_your_company);
           showMessage(`
             <div style="background: rgba(251, 191, 36, 0.1); padding: 20px; border-radius: 12px; border-left: 4px solid #F59E0B;">
