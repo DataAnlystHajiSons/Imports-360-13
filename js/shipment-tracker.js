@@ -467,6 +467,8 @@
         const totalStages = STAGE_ORDER.length;
         const angleIncrement = (2 * Math.PI) / totalStages;
 
+        let completedCount = 0;
+
         STAGE_ORDER.forEach((stageKey, index) => {
             const stage = STAGE_DETAILS[stageKey];
             const config = STAGE_CONFIG[stageKey];
@@ -495,7 +497,7 @@
                     ) return;
                     totalFields++;
                     const val = stageData ? stageData[field.name] : null;
-                    if (val === null || val === undefined || val === '') {
+                    if (val === null || val === undefined || val === '' || (field.type === 'boolean' && val === false)) {
                         incompleteCount++;
                     }
                 });
@@ -525,6 +527,10 @@
                 } else {
                     statusClass = 'documents-pending';
                 }
+            }
+            
+            if (statusClass === 'completed') {
+                completedCount++;
             }
             
             stageNode.classList.add(statusClass);
@@ -906,7 +912,7 @@
                     
                     totalFields++;
                     const val = stageData ? stageData[field.name] : null;
-                    if (val === null || val === undefined || val === '') {
+                    if (val === null || val === undefined || val === '' || (field.type === 'boolean' && val === false)) {
                         incompleteCount++;
                     }
                 });
