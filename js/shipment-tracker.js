@@ -397,7 +397,7 @@
         if (['CPT', 'CFR', 'CNF'].includes(incoTerm)) {
             activeStageOrder = activeStageOrder.filter(stage => stage !== 'freight_query' && stage !== 'award_shipment');
         }
-        if (['LC at Sight', 'Advance Payment', 'CAD'].includes(paymentTerm)) {
+        if (['LC at Sight', 'Advance Payment', 'CAD', 'Dp at Sight', 'DP at Sight'].includes(paymentTerm)) {
             activeStageOrder = activeStageOrder.filter(stage => stage !== 'bank_endorsement');
         }
 

@@ -64,10 +64,10 @@ BEGIN
     WHEN 'non_negotiable_docs' THEN 
       RETURN EXISTS (SELECT 1 FROM public.shipment_awarded sa WHERE sa.shipment_id = p_shipment_id AND sa.awarded = TRUE) OR v_inco_term IN ('CFR', 'CPT', 'CNF');
     WHEN 'bank_endorsement' THEN 
-      IF v_payment_term_name IN ('LC at Sight', 'Advance Payment', 'CAD') THEN RETURN TRUE; END IF;
+      IF v_payment_term_name IN ('LC at Sight', 'Advance Payment', 'CAD', 'Dp at Sight', 'DP at Sight') THEN RETURN TRUE; END IF;
       RETURN EXISTS (SELECT 1 FROM public.non_negotiable_docs WHERE shipment_id = p_shipment_id AND file_url IS NOT NULL);
     WHEN 'original_docs' THEN 
-      IF v_payment_term_name IN ('LC at Sight', 'Advance Payment', 'CAD') THEN
+      IF v_payment_term_name IN ('LC at Sight', 'Advance Payment', 'CAD', 'Dp at Sight', 'DP at Sight') THEN
         RETURN EXISTS (SELECT 1 FROM public.non_negotiable_docs WHERE shipment_id = p_shipment_id AND file_url IS NOT NULL);
       END IF;
       RETURN EXISTS (SELECT 1 FROM public.bank_endorsement WHERE shipment_id = p_shipment_id AND endorsed = TRUE);
@@ -138,7 +138,7 @@ SELECT
         (CASE WHEN s.inco_term IN ('CFR', 'CPT', 'CNF') OR EXISTS (SELECT 1 FROM public.freight_query t WHERE t.shipment_id = s.id AND t.logistics_company_id IS NOT NULL AND t.term IS NOT NULL AND t.shipment_from IS NOT NULL AND t.shipment_from::text <> '' AND t.destination IS NOT NULL AND t.destination::text <> '' AND t.origin IS NOT NULL AND t.origin::text <> '' AND t.readiness_date IS NOT NULL AND t.gross_weight IS NOT NULL AND t.net_weight IS NOT NULL AND t.chargeable_weight IS NOT NULL AND t.no_of_cartoons IS NOT NULL AND t.pick_up_address IS NOT NULL AND t.pick_up_address::text <> '' AND t.remarks IS NOT NULL AND t.remarks::text <> '') THEN 1 ELSE 0 END) +
         (CASE WHEN s.inco_term IN ('CFR', 'CPT', 'CNF') OR EXISTS (SELECT 1 FROM public.shipment_awarded t WHERE t.shipment_id = s.id AND t.awarded IS NOT NULL) THEN 1 ELSE 0 END) +
         (CASE WHEN EXISTS (SELECT 1 FROM public.non_negotiable_docs t WHERE t.shipment_id = s.id AND t.status IS NOT NULL AND t.bank_id IS NOT NULL) THEN 1 ELSE 0 END) +
-        (CASE WHEN pt.name IN ('LC at Sight', 'Advance Payment', 'CAD') OR EXISTS (SELECT 1 FROM public.bank_endorsement t WHERE t.shipment_id = s.id AND t.endorsed IS NOT NULL AND t.endorsed_at IS NOT NULL) THEN 1 ELSE 0 END) +
+        (CASE WHEN pt.name IN ('LC at Sight', 'Advance Payment', 'CAD', 'Dp at Sight', 'DP at Sight') OR EXISTS (SELECT 1 FROM public.bank_endorsement t WHERE t.shipment_id = s.id AND t.endorsed IS NOT NULL AND t.endorsed_at IS NOT NULL) THEN 1 ELSE 0 END) +
         (CASE WHEN EXISTS (SELECT 1 FROM public.original_docs t WHERE t.shipment_id = s.id AND t.status IS NOT NULL AND t.status::text <> '' AND t.bl_date IS NOT NULL AND t.shipping_company IS NOT NULL AND t.shipping_company::text <> '' AND t.tracking_number IS NOT NULL AND t.tracking_number::text <> '' AND t.shipping_guarantee_applied_date IS NOT NULL AND t.shipping_guarantee_received_date IS NOT NULL AND t.dispatch_date IS NOT NULL AND t.arrival_at_bank IS NOT NULL AND t.due_date IS NOT NULL AND t.payment_date IS NOT NULL AND t.bank_id IS NOT NULL) THEN 1 ELSE 0 END) +
         (CASE WHEN EXISTS (SELECT 1 FROM public.docs_to_clearing_agent t WHERE t.shipment_id = s.id AND t.name IS NOT NULL AND t.name::text <> '' AND t.shipping_company IS NOT NULL AND t.shipping_company::text <> '' AND t.tracking_number IS NOT NULL AND t.tracking_number::text <> '' AND t.expected_arrival_date IS NOT NULL AND t.clearing_agent_id IS NOT NULL) THEN 1 ELSE 0 END) +
         (CASE WHEN EXISTS (SELECT 1 FROM public.good_declaration t WHERE t.shipment_id = s.id AND t.gd_number IS NOT NULL AND t.gd_number::text <> '' AND t.gd_date IS NOT NULL AND t.gd_file_date IS NOT NULL AND t.clearing_agent_id IS NOT NULL) THEN 1 ELSE 0 END) +
