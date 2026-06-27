@@ -391,10 +391,14 @@
         await loadSupplierDetails(data);
 
         const incoTerm = data.inco_term ? data.inco_term.toUpperCase() : '';
+        const paymentTerm = data.payment_term_name ? data.payment_term_name.trim() : '';
+        
+        activeStageOrder = [...STAGE_ORDER];
         if (['CPT', 'CFR', 'CNF'].includes(incoTerm)) {
-            activeStageOrder = STAGE_ORDER.filter(stage => stage !== 'freight_query' && stage !== 'award_shipment');
-        } else {
-            activeStageOrder = [...STAGE_ORDER];
+            activeStageOrder = activeStageOrder.filter(stage => stage !== 'freight_query' && stage !== 'award_shipment');
+        }
+        if (['LC at Sight', 'Advance Payment', 'CAD'].includes(paymentTerm)) {
+            activeStageOrder = activeStageOrder.filter(stage => stage !== 'bank_endorsement');
         }
 
         const currentStageIndex = activeStageOrder.indexOf(data.current_stage);
