@@ -16,6 +16,8 @@
       "gate_out", "transportation", "documents", "bills"
     ];
 
+    let activeStageOrder = [...STAGE_ORDER];
+
     // Store expected durations from database
     let stageExpectedDurations = {};
 
@@ -388,10 +390,17 @@
         // Load supplier details for the new section
         await loadSupplierDetails(data);
 
-        const currentStageIndex = STAGE_ORDER.indexOf(data.current_stage);
+        const incoTerm = data.inco_term ? data.inco_term.toUpperCase() : '';
+        if (['CPT', 'CFR', 'CNF'].includes(incoTerm)) {
+            activeStageOrder = STAGE_ORDER.filter(stage => stage !== 'freight_query' && stage !== 'award_shipment');
+        } else {
+            activeStageOrder = [...STAGE_ORDER];
+        }
+
+        const currentStageIndex = activeStageOrder.indexOf(data.current_stage);
 
         // Auto-complete shipment if progress is 100% (final stage 'bills' is reached) and status is not yet completed
-        if (currentStageIndex === STAGE_ORDER.length - 1 && data.status !== 'completed') {
+        if (currentStageIndex === activeStageOrder.length - 1 && data.status !== 'completed') {
             await supabase.from('shipment').update({ status: 'completed' }).eq('id', shipmentId);
             data.status = 'completed'; // Update local status for instant UI sync
         }
@@ -464,12 +473,12 @@
         const radius = 320;
         const centerX = 420;
         const centerY = 420;
-        const totalStages = STAGE_ORDER.length;
+        const totalStages = activeStageOrder.length;
         const angleIncrement = (2 * Math.PI) / totalStages;
 
         let completedCount = 0;
 
-        STAGE_ORDER.forEach((stageKey, index) => {
+        activeStageOrder.forEach((stageKey, index) => {
             const stage = STAGE_DETAILS[stageKey];
             const config = STAGE_CONFIG[stageKey];
             const stageData = config ? stageDataMap[config.table] : null;
@@ -801,7 +810,7 @@
 
     function updateStatistics(currentStageIndex) {
         const completedCount = currentStageIndex;
-        const totalStages = STAGE_ORDER.length;
+        const totalStages = activeStageOrder.length;
         const progressPercent = Math.round((completedCount / totalStages) * 100);
         const remainingCount = totalStages - completedCount;
 
@@ -883,7 +892,7 @@
             .eq('shipment_id', shipmentId)
             .maybeSingle();
 
-        STAGE_ORDER.forEach((stageKey, index) => {
+        activeStageOrder.forEach((stageKey, index) => {
             const stage = STAGE_DETAILS[stageKey];
             const config = STAGE_CONFIG[stageKey];
             const stageData = config ? stageDataMap[config.table] : null;
@@ -1031,14 +1040,14 @@
     }
 
     function selectStage(index) {
-        const stageKey = STAGE_ORDER[index];
+        const stageKey = activeStageOrder[index];
         const stage = STAGE_DETAILS[stageKey];
         const detailsContainer = document.getElementById('currentStageDetails');
         
         let statusText = 'Pending';
-        if (index < STAGE_ORDER.indexOf(currentStageData.current_stage)) {
+        if (index < activeStageOrder.indexOf(currentStageData.current_stage)) {
             statusText = 'Completed';
-        } else if (index === STAGE_ORDER.indexOf(currentStageData.current_stage)) {
+        } else if (index === activeStageOrder.indexOf(currentStageData.current_stage)) {
             statusText = 'In Progress';
         }
 
