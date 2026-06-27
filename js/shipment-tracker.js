@@ -336,7 +336,7 @@
         
         const { data, error } = await supabase
             .from("shipment")
-            .select("*, shipment_products(*, product_variety(*, supplier(name)))")
+            .select("*, payment_terms(name), shipment_products(*, product_variety(*, supplier(name)))")
             .eq("id", shipmentId)
             .single();
 
@@ -391,7 +391,7 @@
         await loadSupplierDetails(data);
 
         const incoTerm = data.inco_term ? data.inco_term.toUpperCase() : '';
-        const paymentTerm = data.payment_term_name ? data.payment_term_name.trim() : '';
+        const paymentTerm = (data.payment_terms && data.payment_terms.name) ? data.payment_terms.name.trim() : '';
         
         activeStageOrder = [...STAGE_ORDER];
         if (['CPT', 'CFR', 'CNF'].includes(incoTerm)) {
