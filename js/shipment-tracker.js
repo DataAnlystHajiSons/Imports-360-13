@@ -378,13 +378,14 @@
                         return { data: forecastData, error: null };
                     });
             }
-            return supabase.from(tableName).select('*').eq('shipment_id', shipmentId).maybeSingle();
+            return supabase.from(tableName).select('*').eq('shipment_id', shipmentId);
         });
         
         const stageResults = await Promise.all(stageDataPromises);
         const stageDataMap = {};
         stageTableNames.forEach((name, i) => {
-            stageDataMap[name] = stageResults[i].data;
+            const rows = stageResults[i].data;
+            stageDataMap[name] = Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
         });
 
         // Load supplier details for the new section
@@ -850,12 +851,13 @@
                         return { data: forecastData, error: null };
                     });
             }
-            return supabase.from(tableName).select('*').eq('shipment_id', shipmentId).maybeSingle();
+            return supabase.from(tableName).select('*').eq('shipment_id', shipmentId);
         });        
         const stageResults = await Promise.all(stageDataPromises);
         const stageDataMap = {};
         stageTableNames.forEach((name, i) => {
-            stageDataMap[name] = stageResults[i].data;
+            const rows = stageResults[i].data;
+            stageDataMap[name] = Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
         });
 
         // Check if documents are uploaded
