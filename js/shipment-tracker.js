@@ -503,6 +503,7 @@
                         field.name.endsWith('_url') ||
                         field.name === 'created_at' ||
                         field.name === 'notes' ||
+                        field.name === 'remarks' ||
                         field.name === 'verification_notes' ||
                         field.name === 'freight_quote_response_id' ||
                         field.name === 'amendment_da_amount' ||
@@ -918,6 +919,7 @@
                         field.name.endsWith('_url') ||
                         field.name === 'created_at' ||
                         field.name === 'notes' ||
+                        field.name === 'remarks' ||
                         field.name === 'verification_notes' ||
                         field.name === 'freight_quote_response_id' ||
                         field.name === 'amendment_da_amount' ||
