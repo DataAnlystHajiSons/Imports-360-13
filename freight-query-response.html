@@ -893,6 +893,7 @@
                 freight_query_id: currentAwardData.queryId,
                 freight_quote_response_id: currentAwardData.responseId,
                 awarded_by: user.id,
+                awarded: true,
                 notes: document.getElementById('award-notes').value
           });
           if (awardError) throw awardError;
