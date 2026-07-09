@@ -392,7 +392,14 @@
         await loadSupplierDetails(data);
 
         const incoTerm = data.inco_term ? data.inco_term.toUpperCase() : '';
-        const paymentTerm = (data.payment_terms && data.payment_terms.name) ? data.payment_terms.name.trim() : '';
+        let paymentTerm = '';
+        if (data.payment_terms) {
+            if (Array.isArray(data.payment_terms)) {
+                paymentTerm = data.payment_terms[0]?.name?.trim() || '';
+            } else {
+                paymentTerm = data.payment_terms.name?.trim() || '';
+            }
+        }
         
         activeStageOrder = [...STAGE_ORDER];
         if (['CPT', 'CFR', 'CNF'].includes(incoTerm)) {
@@ -402,7 +409,17 @@
             activeStageOrder = activeStageOrder.filter(stage => stage !== 'bank_endorsement');
         }
 
-        const currentStageIndex = activeStageOrder.indexOf(data.current_stage);
+        let currentStageIndex = activeStageOrder.indexOf(data.current_stage);
+        if (currentStageIndex === -1) {
+            const originalIndex = STAGE_ORDER.indexOf(data.current_stage);
+            for (let i = originalIndex + 1; i < STAGE_ORDER.length; i++) {
+                if (activeStageOrder.includes(STAGE_ORDER[i])) {
+                    currentStageIndex = activeStageOrder.indexOf(STAGE_ORDER[i]);
+                    break;
+                }
+            }
+            if (currentStageIndex === -1) currentStageIndex = 0;
+        }
 
         // Auto-complete shipment if progress is 100% (final stage 'bills' is reached) and status is not yet completed
         if (currentStageIndex === activeStageOrder.length - 1 && data.status !== 'completed') {
