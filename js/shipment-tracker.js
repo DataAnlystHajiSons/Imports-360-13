@@ -433,6 +433,89 @@
           modeElement.textContent = modeOfTransport.charAt(0).toUpperCase() + modeOfTransport.slice(1);
           incotermElement.textContent = incotermValue;
         }
+
+        // Add interactive inline edit for Incoterm
+        const incotermContainer = document.getElementById('incotermContainer');
+        if (incotermContainer) {
+            incotermContainer.onclick = function(e) {
+                // Prevent multiple clicks if already editing
+                if (document.getElementById('inlineIncotermSelect')) return;
+
+                const currentVal = incotermElement.textContent;
+                const options = ['EXW', 'FOB', 'CFR', 'FCA', 'CPT', 'CNF', 'DDP'];
+                
+                const selectHtml = document.createElement('select');
+                selectHtml.id = 'inlineIncotermSelect';
+                selectHtml.style.fontSize = 'inherit';
+                selectHtml.style.fontFamily = 'inherit';
+                selectHtml.style.fontWeight = 'inherit';
+                selectHtml.style.color = '#0e7490';
+                selectHtml.style.backgroundColor = '#e0f2fe';
+                selectHtml.style.border = '1px solid #0891b2';
+                selectHtml.style.borderRadius = '12px';
+                selectHtml.style.padding = '2px 8px';
+                selectHtml.style.outline = 'none';
+                selectHtml.style.cursor = 'pointer';
+
+                options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt;
+                    option.text = opt;
+                    if (opt === currentVal) option.selected = true;
+                    selectHtml.appendChild(option);
+                });
+
+                // Temporarily hide the text and icon, show the select
+                const originalHtml = incotermContainer.innerHTML;
+                incotermContainer.innerHTML = '';
+                incotermContainer.appendChild(selectHtml);
+                
+                selectHtml.focus();
+
+                // Handle save
+                const saveChanges = async () => {
+                    const newVal = selectHtml.value;
+                    if (newVal !== currentVal) {
+                        incotermContainer.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 5px;"></i> Saving...';
+                        
+                        try {
+                            const { error } = await supabase
+                                .from('shipment')
+                                .update({ inco_term: newVal })
+                                .eq('id', shipmentId);
+                                
+                            if (error) throw error;
+                            
+                            // Immediately re-initialize tracker to morph visuals and apply bypass logic
+                            await initializeTracker();
+                        } catch (err) {
+                            console.error('Error updating inco_term:', err);
+                            alert('Failed to update Incoterm: ' + err.message);
+                            incotermContainer.innerHTML = originalHtml;
+                        }
+                    } else {
+                        incotermContainer.innerHTML = originalHtml;
+                    }
+                };
+
+                selectHtml.addEventListener('change', saveChanges);
+                selectHtml.addEventListener('blur', () => {
+                    // Slight delay to allow change event to fire first if a value was selected
+                    setTimeout(() => {
+                        if (incotermContainer.contains(selectHtml)) {
+                            incotermContainer.innerHTML = originalHtml;
+                        }
+                    }, 150);
+                });
+                selectHtml.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        incotermContainer.innerHTML = originalHtml;
+                    }
+                });
+                
+                e.stopPropagation(); // prevent triggering other clicks
+            };
+        }
         
         const transportLabels = {
           'sea': 'Sea Freight',

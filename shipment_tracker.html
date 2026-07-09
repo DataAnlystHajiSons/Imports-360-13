@@ -32,7 +32,11 @@
             <div class="shipment-status">In Transit</div>
             <div class="shipment-incoterm-display" id="incotermDisplay">
               <i class="fas fa-shipping-fast"></i>
-              <span id="modeOfTransport">Sea</span> • <span id="incotermValue">FOB</span>
+              <span id="modeOfTransport">Sea</span> • 
+              <span id="incotermContainer" class="editable-badge" title="Click to edit Incoterm">
+                <span id="incotermValue">FOB</span>
+                <i class="fas fa-pencil-alt edit-icon"></i>
+              </span>
             </div>
             <div class="progress-stats">
               <div class="stat">
@@ -1262,7 +1266,7 @@
       });
   </script>
 
-  <script type="module" src="js/shipment-tracker.js?v=2.2"></script>
+  <script type="module" src="js/shipment-tracker.js?v=2.3"></script>
   <script src="js/supplier-helpers.js"></script>
 </body>
 </html>
