@@ -93,8 +93,8 @@ export async function checkAuth() {
  * @returns {boolean}
  */
 export function hasPageAccess(role, pageName) {
-  if (role === 'admin') {
-    return true; // Admin has access to all pages
+  if (role === 'admin' || role === 'super_admin') {
+    return true; // Admin and Super Admin have access to all pages
   }
 
   const allowedPages = PAGE_ACCESS[role] || [];
@@ -162,8 +162,8 @@ export async function enforcePageAccess() {
  * @returns {boolean}
  */
 export function shouldShowMenuItem(role, pageName) {
-  if (role === 'admin') {
-    return true; // Admin sees all menu items
+  if (role === 'admin' || role === 'super_admin') {
+    return true; // Admin and Super Admin see all menu items
   }
 
   const allowedPages = MENU_CONFIG[role] || [];
@@ -176,8 +176,8 @@ export function shouldShowMenuItem(role, pageName) {
  * @param {string} role - User role
  */
 export function filterSidebarByRole(role) {
-  if (role === 'admin') {
-    return; // Admin sees everything
+  if (role === 'admin' || role === 'super_admin') {
+    return; // Admin and Super Admin see everything
   }
 
   const sidebar = document.querySelector('.sidebar-nav');
