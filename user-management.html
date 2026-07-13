@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imports 360 - User Management</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/user-management.css">
+  <style>
+    /* Inline helper styles */
+    .role-badge {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: inline-block;
+    }
+    .role-super_admin {
+      background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+      color: #7e22ce;
+      border: 1px solid #c084fc;
+    }
+    .role-admin {
+      background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+      color: #0369a1;
+      border: 1px solid #38bdf8;
+    }
+    .role-finance {
+      background: linear-gradient(135deg, #fef9c3, #fef08a);
+      color: #a16207;
+      border: 1px solid #facc15;
+    }
+    .role-imports_ops {
+      background: linear-gradient(135deg, #ffedd5, #fed7aa);
+      color: #c2410c;
+      border: 1px solid #fb923c;
+    }
+    .role-logistics {
+      background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+      color: #15803d;
+      border: 1px solid #4ade80;
+    }
+    .role-supplier {
+      background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+      color: #374151;
+      border: 1px solid #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <!-- Overlay Loader -->
+  <div class="loader-overlay" id="loader">
+    <div class="loader">
+      <div class="loader-dot"></div>
+      <div class="loader-dot"></div>
+      <div class="loader-dot"></div>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+     <div class="sidebar-header">
+      <img src="https://i.postimg.cc/j5K3DCyc/20250826-1802-Imports-360-Logo-simple-compose-01k3k7grx1f2fsmtvdcvwbx54s.png" alt="Logo" class="sidebar-logo">
+      <button class="sidebar-toggle">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul>
+        <li>
+          <a href="admin-dashboard.html" class="nav-link">
+            <i class="fas fa-home icon"></i>
+            <span class="text">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="insights-center.html" class="nav-link">
+            <i class="fas fa-chart-line icon"></i>
+            <span class="text">Insights Center</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link active">
+            <i class="fas fa-users-cog icon"></i>
+            <span class="text">User Management</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="main-content">
+    <header class="main-header">
+      <div class="header-title">
+        <h1>User Management</h1>
+        <p>Manage application users, secure credentials, and configure roles.</p>
+      </div>
+      <div class="enhanced-user-menu">
+        <button class="enhanced-user-button" id="user-menu-button">
+          <div class="user-avatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="user-preview">
+            <span class="user-name" id="admin-user-name">Super Admin</span>
+            <span class="user-role" id="admin-user-role">Super Admin</span>
+          </div>
+        </button>
+      </div>
+    </header>
+
+    <div class="dashboard-grid">
+      <!-- Stats Row -->
+      <div class="stats-card">
+        <div class="stat-icon purple"><i class="fas fa-user-shield"></i></div>
+        <div class="stat-info">
+          <h3>Total Users</h3>
+          <p class="stat-value" id="total-users-count">0</p>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+          <h3>Super Admins</h3>
+          <p class="stat-value" id="super-admins-count">0</p>
+        </div>
+      </div>
+      <div class="stats-card">
+        <div class="stat-icon green"><i class="fas fa-user-check"></i></div>
+        <div class="stat-info">
+          <h3>Active Roles</h3>
+          <p class="stat-value" id="active-roles-count">0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users Table Section -->
+    <div class="glass-section">
+      <div class="section-header">
+        <h2><i class="fas fa-users-viewfinder"></i> User Accounts</h2>
+        <div class="header-actions">
+          <div class="search-bar">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="user-search" placeholder="Search by name or email...">
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="custom-table" id="users-table">
+          <thead>
+            <tr>
+              <th>Full Name</th>
+              <th>Email Address</th>
+              <th>Role Permissions</th>
+              <th>Date Joined</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <!-- Dynamic Users Injected Here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="password-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="closePasswordModal()">&times;</span>
+      <h2><i class="fas fa-key icon-header"></i> Reset Password</h2>
+      <p class="modal-hint">Set a new secure password for <strong id="reset-user-email">user</strong>.</p>
+      
+      <form id="password-form" onsubmit="event.preventDefault(); saveNewPassword();">
+        <input type="hidden" id="reset-user-id">
+        <div class="form-group">
+          <label for="new-password">New Password</label>
+          <div class="input-container">
+            <input type="password" id="new-password" required minlength="6" class="form-input" placeholder="Min 6 characters">
+            <i class="fas fa-lock input-icon"></i>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="confirm-password">Confirm New Password</label>
+          <div class="input-container">
+            <input type="password" id="confirm-password" required minlength="6" class="form-input" placeholder="Repeat password">
+            <i class="fas fa-shield-alt input-icon"></i>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Update Password</button>
+          <button type="button" class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Role Modal -->
+  <div id="role-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="closeRoleModal()">&times;</span>
+      <h2><i class="fas fa-user-tag icon-header"></i> Modify Role</h2>
+      <p class="modal-hint">Change role permissions for <strong id="role-user-name">user</strong>.</p>
+      
+      <form id="role-form" onsubmit="event.preventDefault(); saveNewRole();">
+        <input type="hidden" id="role-user-id">
+        <div class="form-group">
+          <label for="new-role-select">Select New Role</label>
+          <select id="new-role-select" class="form-input" required>
+            <option value="admin">Admin</option>
+            <option value="super_admin">Super Admin</option>
+            <option value="imports_ops">Imports Ops</option>
+            <option value="finance">Finance</option>
+            <option value="logistics">Logistics</option>
+            <option value="supplier">Supplier</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Update Role</button>
+          <button type="button" class="btn btn-secondary" onclick="closeRoleModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete User Confirmation Modal -->
+  <div id="delete-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="closeDeleteModal()">&times;</span>
+      <h2 style="color: #ef4444;"><i class="fas fa-trash-alt icon-header"></i> Delete User</h2>
+      <p class="modal-hint">Are you absolutely sure you want to permanently delete <strong id="delete-user-name">user</strong>?</p>
+      <p class="danger-warning"><i class="fas fa-exclamation-triangle"></i> This action is permanent and cannot be undone. All associated user data and their login credentials will be removed.</p>
+      
+      <input type="hidden" id="delete-user-id">
+      <div class="modal-actions">
+        <button type="button" class="btn btn-danger" onclick="executeDeleteUser()">Permanently Delete</button>
+        <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-message"></div>
+
+  <script type="module" src="js/user-management.js"></script>
+</body>
+</html>

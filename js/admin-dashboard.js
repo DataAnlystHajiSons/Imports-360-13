@@ -950,6 +950,14 @@ window.onload = async () => {
           // Update preview in user button
           document.getElementById('user-name-preview').textContent = userProfile.full_name;
           document.getElementById('user-role-preview').textContent = toProperCase(userProfile.role);
+
+          // Show User Management menu item for super admins
+          if (userProfile.role === 'super_admin') {
+            const superAdminNav = document.getElementById('super-admin-nav');
+            if (superAdminNav) {
+              superAdminNav.style.display = 'block';
+            }
+          }
           
           // Generate user initials for avatar
           const initials = userProfile.full_name
