@@ -5,106 +5,351 @@
   <title>Imports 360 - Award Shipment</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <script type="module">
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.4";
-    const supabase = createClient("https://sfknzqkiqxivzcualcau.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNma256cWtpcXhpdnpjdWFsY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3OTU0ODksImV4cCI6MjA3MjM3MTQ4OX0.JKjOS9NRdbVH1UanfqmBeHmMSnlWlZtDr-5LdKw5YaA");
+  <style>
+    .page-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .filters-section {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: flex-end;
+    }
 
-    window.onload = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            window.location.href = 'login.html';
-        }
-    };
-  </script>
+    .filter-group {
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .filter-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-secondary-color);
+    }
+
+    /* Native Select styling */
+    select.styled-select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: white;
+        font-size: 14px;
+        color: #1e293b;
+        cursor: pointer;
+        appearance: auto;
+    }
+
+    select.styled-select:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .quote-card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 20px;
+      position: relative;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .quote-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        border-color: var(--accent-color);
+    }
+
+    .quote-card.best-price { border-top: 5px solid #10b981; }
+    .quote-card.fastest { border-top: 5px solid #3b82f6; }
+    .quote-card.awarded {
+        border: 2px solid var(--success-color);
+        background-color: rgba(16, 185, 129, 0.05);
+        overflow: hidden;
+    }
+
+    .awarded-stripe {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 8px;
+        background: var(--success-color);
+        z-index: 5;
+    }
+
+    .award-timestamp {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success-color);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        margin-top: 8px;
+    }
+
+    .badge {
+        position: absolute;
+        top: -12px; right: 20px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px; font-weight: 700;
+        text-transform: uppercase;
+        color: white; z-index: 10;
+    }
+    .badge-price { background: #10b981; }
+    .badge-speed { background: #3b82f6; }
+    .badge-awarded { background: var(--success-color); top: 10px; right: 10px; }
+
+    .quote-header {
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 15px; margin-bottom: 15px;
+    }
+    .company-name { font-size: 18px; font-weight: 700; color: var(--text-primary-color); }
+    .total-cost { font-size: 28px; font-weight: 800; color: var(--accent-color); margin: 10px 0; }
+
+    .cost-breakdown { background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
+    .breakdown-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+
+    .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .metric-item { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary-color); }
+    .metric-item i { color: var(--accent-color); width: 16px; }
+    .metric-value { font-weight: 600; color: var(--text-primary-color); }
+
+    .quote-footer { margin-top: auto; display: flex; flex-wrap: wrap; gap: 10px; }
+
+    .shipment-banner {
+        background: linear-gradient(135deg, var(--accent-color) 0%, var(--highlight-color) 100%);
+        color: white; padding: 20px; border-radius: 12px; margin-bottom: 10px;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .shipment-details h2 { margin: 0; color: white; text-align: left; }
+    .shipment-meta { font-size: 14px; opacity: 0.9; margin-top: 5px; }
+
+    .empty-state { text-align: center; padding: 60px; background: white; border-radius: 12px; color: #94a3b8; }
+    .empty-state i { font-size: 48px; margin-bottom: 20px; }
+
+    /* Modal Styles */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.show { display: flex; }
+    .modal-content { background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; position: relative; }
+    .close-button { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #94a3b8; }
+  
+    /* UI/UX Improvements */
+    .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: #1e293b; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 10px; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; font-weight: 500; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+    .toast.warning { background: #f59e0b; }
+
+    .button-outline { background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); text-decoration: none; display: inline-flex; justify-content: center; align-items: center; gap: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; padding: 10px 20px; font-family: inherit; font-size: 14px; }
+    .button-outline:hover { background: rgba(124, 58, 237, 0.05); }
+    
+    .button-warning { background: transparent; border: 1px solid #f59e0b; color: #d97706; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; gap: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; padding: 10px 20px; font-family: inherit; font-size: 14px; }
+    .button-warning:hover { background: #fffbeb; color: #b45309; }
+
+    .quote-card { max-width: 500px; }
+
+  </style>
+
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <style>
+    /* Select2 Customization */
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-container--default .select2-selection--single {
+        height: 42px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: white;
+        display: flex;
+        align-items: center;
+    }
+    .select2-container--default.select2-container--open .select2-selection--single,
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+    }
+    .select2-container--default .select2-selection--single:hover {
+        border-color: #cbd5e1;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #1e293b;
+        font-size: 14px;
+        line-height: normal;
+        padding-left: 12px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+        right: 10px;
+    }
+    .select2-dropdown {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        z-index: 1050;
+    }
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: var(--primary-color);
+    }
+    .select2-container--default .select2-search--dropdown .select2-search__field {
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 8px 12px;
+    }
+    .select2-container--default .select2-search--dropdown .select2-search__field:focus {
+        border-color: var(--primary-color);
+        outline: none;
+    }
+  </style>
+
+  <style>
+    /* Advanced Autocomplete Styles */
+    .autocomplete-container {
+        position: relative;
+        width: 100%;
+    }
+    input.autocomplete-input {
+        width: 100%;
+        padding: 12px 15px 12px 40px !important;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #1e293b;
+        box-sizing: border-box;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .autocomplete-input:focus {
+        border-color: var(--primary-color, #0d9488);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+    }
+    .autocomplete-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+    }
+    .autocomplete-clear {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        cursor: pointer;
+        display: none;
+    }
+    .autocomplete-clear:hover {
+        color: #ef4444;
+    }
+    .autocomplete-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
+    .autocomplete-item {
+        padding: 12px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+        transition: background 0.15s;
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+    }
+    .autocomplete-item:last-child {
+        border-bottom: none;
+    }
+    .autocomplete-item:hover, .autocomplete-item.active {
+        background-color: #f8fafc;
+    }
+    .autocomplete-item-title {
+        font-weight: 600;
+        color: #1e293b;
+    }
+    .autocomplete-item-desc {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 4px;
+    }
+    .autocomplete-highlight {
+        background-color: #fef08a;
+        color: #1e293b;
+        font-weight: 700;
+        padding: 0 2px;
+        border-radius: 2px;
+    }
+  </style>
 </head>
 <body>
   <aside class="sidebar">
      <div class="sidebar-header">
       <img src="https://i.postimg.cc/j5K3DCyc/20250826-1802-Imports-360-Logo-simple-compose-01k3k7grx1f2fsmtvdcvwbx54s.png" alt="Logo" class="sidebar-logo">
-      <button class="sidebar-toggle">
-        <i class="fas fa-bars"></i>
-      </button>
+      <button class="sidebar-toggle"><i class="fas fa-bars"></i></button>
     </div>
     <nav class="sidebar-nav">
       <ul>
+        <li><a href="admin-dashboard.html" class="nav-link"><i class="fas fa-home icon"></i><span class="text">Dashboard</span></a></li>
         <li>
-          <a href="admin-dashboard.html" class="nav-link">
-            <i class="fas fa-home icon"></i>
-            <span class="text">Dashboard</span>
+          <a href="#" class="nav-link has-submenu">
+            <i class="fas fa-file-alt icon"></i><span class="text">Documents</span><span class="arrow"><i class="fas fa-chevron-down"></i></span>
           </a>
+          <ul class="submenu">
+            <li><a href="documents.html" class="nav-link"><span class="text">Document Management</span></a></li>
+            <li><a href="admin-document-requirements.html" class="nav-link"><span class="text">Document Requirements</span></a></li>
+          </ul>
         </li>
-        <li>
-          <a href="documents.html" class="nav-link">
-            <i class="fas fa-file-alt icon"></i>
-            <span class="text">Documents</span>
-          </a>
-        </li>
-        <li>
-          <a href="forecast.html" class="nav-link">
-            <i class="fas fa-bullhorn icon"></i>
-            <span class="text">Forecasts</span>
-          </a>
-        </li>
+        <li><a href="forecast.html" class="nav-link"><i class="fas fa-bullhorn icon"></i><span class="text">Forecasts</span></a></li>
         <li><a href="verification-list.html" class="nav-link"><i class="fas fa-check-double icon"></i><span class="text">Verification List</span></a></li>
         <li>
           <a href="#" class="nav-link has-submenu">
-            <i class="fas fa-box icon"></i>
-            <span class="text">Shipments</span>
-            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+            <i class="fas fa-box icon"></i><span class="text">Shipments</span><span class="arrow"><i class="fas fa-chevron-down"></i></span>
           </a>
           <ul class="submenu">
             <li><a href="shipment_tracker.html" class="nav-link"><span class="text">Shipment Tracker</span></a></li>
             <li><a href="shipment-details.html" class="nav-link"><span class="text">All Shipments</span></a></li>
           </ul>
         </li>
-        <li>
-          <a href="product-details.html" class="nav-link">
-            <i class="fas fa-tags icon"></i>
-            <span class="text">Products</span>
-          </a>
-        </li>
-        <li>
-          <a href="supplier-details.html" class="nav-link">
-            <i class="fas fa-truck icon"></i>
-            <span class="text">Suppliers</span>
-          </a>
-        </li>
-        <li>
-          <a href="supplier-shipment-responses.html" class="nav-link">
-            <i class="fas fa-inbox icon"></i>
-            <span class="text">Supplier Responses</span>
-          </a>
-        </li>
-        <li>
-          <a href="bank-details.html" class="nav-link">
-            <i class="fas fa-university icon"></i>
-            <span class="text">Banks</span>
-          </a>
-        </li>
-        <li>
-          <a href="admin-payment-terms.html" class="nav-link">
-            <i class="fas fa-credit-card icon"></i>
-            <span class="text">Payment Terms</span>
-          </a>
-        </li>
-        <li>
-          <a href="clearing-agent-details.html" class="nav-link">
-            <i class="fas fa-user-shield icon"></i>
-            <span class="text">Clearing Agents</span>
-          </a>
-        </li>
-        <li>
-          <a href="warehouse-details.html" class="nav-link">
-            <i class="fas fa-warehouse icon"></i>
-            <span class="text">Warehouses</span>
-          </a>
-        </li>
+        <li><a href="product-details.html" class="nav-link"><i class="fas fa-tags icon"></i><span class="text">Products</span></a></li>
+        <li><a href="supplier-details.html" class="nav-link"><i class="fas fa-truck icon"></i><span class="text">Suppliers</span></a></li>
+        <li><a href="supplier-shipment-responses.html" class="nav-link"><i class="fas fa-inbox icon"></i><span class="text">Supplier Responses</span></a></li>
+        <li><a href="bank-details.html" class="nav-link"><i class="fas fa-university icon"></i><span class="text">Banks</span></a></li>
+        <li><a href="clearing-agent-details.html" class="nav-link"><i class="fas fa-user-shield icon"></i><span class="text">Clearing Agents</span></a></li>
+        <li><a href="warehouse-details.html" class="nav-link"><i class="fas fa-warehouse icon"></i><span class="text">Warehouses</span></a></li>
         <li><a href="logistic-cells.html" class="nav-link"><i class="fas fa-cubes icon"></i><span class="text">Logistic Cells</span></a></li>
         <li>
           <a href="#" class="nav-link has-submenu open">
-            <i class="fas fa-truck-ramp-box icon"></i>
-            <span class="text">Freight</span>
-            <span class="arrow"><i class="fas fa-chevron-down"></i></span>
+            <i class="fas fa-truck-ramp-box icon"></i><span class="text">Freight</span><span class="arrow"><i class="fas fa-chevron-down"></i></span>
           </a>
           <ul class="submenu open">
             <li><a href="send-freight-queries.html" class="nav-link"><span class="text">Send Freight Queries</span></a></li>
@@ -124,67 +369,463 @@
         <h1>Award Shipment</h1>
       </div>
     </header>
-    <div class="panel">
-      <div class="panel-body">
-        <p>This page is under construction.</p>
+
+    <div class="page-layout">
+      <!-- Searchable Native Dropdown Area -->
+      <div class="filters-section">
+          <div class="filter-group" style="flex: 1;">
+            <label for="shipment-autocomplete">Search and Select Shipment</label>
+            <div class="autocomplete-container">
+                <i class="fas fa-search autocomplete-icon"></i>
+                <input type="text" id="shipment-autocomplete" class="autocomplete-input" placeholder="Type Reference Code or Product Name..." autocomplete="off">
+                <i class="fas fa-times autocomplete-clear" id="shipment-clear"></i>
+                <div class="autocomplete-dropdown" id="shipment-dropdown"></div>
+                <input type="hidden" id="shipment-filter">
+            </div>
+          </div>
+      </div>
+
+      <div id="shipment-info-banner"></div>
+
+      <div id="responses-container">
+          <div class="empty-state">
+            <i class="fas fa-ship"></i>
+            <h3>Select a shipment to compare quotes</h3>
+            <p>Compare costs, transit times, and award shipments to logistics companies.</p>
+          </div>
       </div>
     </div>
   </div>
-<script>
-    // Standard sidebar and responsive logic
-    document.addEventListener('DOMContentLoaded', () => {
-      const sidebar = document.querySelector('.sidebar');
-      const sidebarToggle = document.querySelector('.sidebar-toggle');
-      const navLinks = document.querySelectorAll('.nav-link');
-      const hasSubmenus = document.querySelectorAll('.has-submenu');
-      const mediaQuery = window.matchMedia('(max-width: 768px)');
 
-      function handleMediaQueryChange(e) {
-        if (e.matches) {
-          sidebar.classList.remove('collapsed');
-          sidebar.classList.remove('open');
-        } else {
-          sidebar.classList.remove('open');
-        }
+  <!-- Award Confirmation Modal -->
+  <div id="award-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-button" id="close-modal">&times;</span>
+      <h2><i class="fas fa-trophy" style="color: #f59e0b; margin-right: 10px;"></i> Award Shipment</h2>
+      <div id="award-info" style="margin: 20px 0; font-size: 15px; color: var(--text-primary-color); line-height: 1.6;"></div>
+      <div class="form-group" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;">
+          <label for="award-notes" style="font-weight: 600; font-size: 14px; color: var(--text-secondary-color);">Decision Notes</label>
+          <textarea id="award-notes" rows="4" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; outline: none;" placeholder="e.g. Awarded based on best transit time and rate..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="button" id="confirm-award-btn" style="background: linear-gradient(135deg, var(--accent-color) 0%, var(--highlight-color) 100%);">Confirm Award</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/+esm";
+
+  const supabaseUrl = "https://sfknzqkiqxivzcualcau.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNma256cWtpcXhpdnpjdWFsY2F1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3OTU0ODksImV4cCI6MjA3MjM3MTQ4OX0.JKjOS9NRdbVH1UanfqmBeHmMSnlWlZtDr-5LdKw5YaA";
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  let allShipments = [];
+  let currentAwardData = null;
+
+  function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      let icon = '<i class="fas fa-check-circle"></i>';
+      if(type === 'error') icon = '<i class="fas fa-times-circle"></i>';
+      if(type === 'warning') icon = '<i class="fas fa-exclamation-triangle"></i>';
+      toast.innerHTML = `${icon} <span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => toast.remove(), 300);
+      }, 3000);
+  }
+
+  async function loadFilters() {
+      try {
+          const { data, error } = await supabase
+              .from('v_shipments_with_all_details')
+              .select('id, reference_code, product_name, variety_name, current_stage');
+          if (error) throw error;
+          allShipments = data || [];
+          setupAutocomplete();
+      } catch (err) {
+          console.error(err);
+          showToast('Error loading filter options: ' + err.message, 'error');
+      }
+  }
+
+  function setupAutocomplete() {
+      const input = document.getElementById('shipment-autocomplete');
+      const clearBtn = document.getElementById('shipment-clear');
+      const dropdown = document.getElementById('shipment-dropdown');
+      const hiddenInput = document.getElementById('shipment-filter');
+
+      // Only show shipments that have completed freight query or are in freight_query stage
+      const filterableShipments = allShipments.filter(s => s.current_stage === 'freight_query' || s.current_stage === 'award_shipment' || s.current_stage === 'non_negotiable_docs' || s.current_stage === 'bank_endorsement');
+
+      function closeDropdown() {
+          dropdown.style.display = 'none';
       }
 
-      handleMediaQueryChange(mediaQuery);
-      mediaQuery.addListener(handleMediaQueryChange);
+      function highlightText(text, search) {
+          if (!search) return text;
+          const pattern = new RegExp(`(${search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+          return text.replace(pattern, '<span class="autocomplete-highlight">$1</span>');
+      }
 
-      sidebarToggle.addEventListener('click', () => {
-        if (mediaQuery.matches) {
-          sidebar.classList.toggle('open');
-        } else {
-          sidebar.classList.toggle('collapsed');
-        }
+      input.addEventListener('input', (e) => {
+          const val = e.target.value.toLowerCase().trim();
+          if (!val) {
+              clearBtn.style.display = 'none';
+              closeDropdown();
+              return;
+          }
+          clearBtn.style.display = 'block';
+
+          const filtered = filterableShipments.filter(s => 
+              s.reference_code.toLowerCase().includes(val) || 
+              (s.product_name && s.product_name.toLowerCase().includes(val)) ||
+              (s.variety_name && s.variety_name.toLowerCase().includes(val))
+          );
+
+          dropdown.innerHTML = '';
+          if (filtered.length === 0) {
+              dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #94a3b8;">No matching active shipments</div>';
+          } else {
+              filtered.forEach(s => {
+                  const item = document.createElement('div');
+                  item.className = 'autocomplete-item';
+                  const title = highlightText(s.reference_code, val);
+                  const descText = `${s.product_name || ''} - ${s.variety_name || ''} (${s.current_stage?.replace(/_/g, ' ') || ''})`;
+                  const desc = highlightText(descText, val);
+                  
+                  item.innerHTML = `
+                      <span class="autocomplete-item-title">${title}</span>
+                      <span class="autocomplete-item-desc">${desc}</span>
+                  `;
+                  item.addEventListener('click', () => {
+                      input.value = s.reference_code;
+                      hiddenInput.value = s.id;
+                      clearBtn.style.display = 'block';
+                      closeDropdown();
+                      onShipmentSelect(s.id);
+                  });
+                  dropdown.appendChild(item);
+              });
+          }
+          dropdown.style.display = 'block';
       });
 
-      hasSubmenus.forEach(item => {
-        item.addEventListener('click', (e) => {
+      clearBtn.addEventListener('click', () => {
+          input.value = '';
+          hiddenInput.value = '';
+          clearBtn.style.display = 'none';
+          closeDropdown();
+          document.getElementById('responses-container').innerHTML = `
+              <div class="empty-state">
+                <i class="fas fa-ship"></i>
+                <h3>Select a shipment to compare quotes</h3>
+                <p>Compare costs, transit times, and award shipments to logistics companies.</p>
+              </div>
+          `;
+          document.getElementById('shipment-info-banner').innerHTML = '';
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+          if (!e.target.closest('.autocomplete-container')) {
+              closeDropdown();
+          }
+      });
+  }
+
+  async function onShipmentSelect(shipmentId) {
+      const responsesContainer = document.getElementById('responses-container');
+      responsesContainer.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><h3>Loading quotes...</h3></div>';
+
+      try {
+          // Render shipment banner
+          const shipment = allShipments.find(s => s.id === shipmentId);
+          if (shipment) {
+              document.getElementById('shipment-info-banner').innerHTML = `
+                  <div class="shipment-banner">
+                      <div class="shipment-details">
+                          <h2>${shipment.reference_code}</h2>
+                          <div class="shipment-meta">Product: ${shipment.product_name || 'N/A'} ${shipment.variety_name || ''}</div>
+                      </div>
+                      <div style="font-weight: 700; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 8px;">
+                          Stage: ${shipment.current_stage?.replace(/_/g, ' ')?.toUpperCase()}
+                      </div>
+                  </div>
+              `;
+          }
+
+          await loadResponses();
+      } catch (err) {
+          console.error(err);
+          showToast('Error loading details: ' + err.message, 'error');
+      }
+  }
+
+  async function loadResponses() {
+    const shipmentId = document.getElementById('shipment-filter').value;
+    const container = document.getElementById('responses-container');
+
+    const { data: responses, error } = await supabase
+        .from('freight_quote_response')
+        .select(`
+            *,
+            freight_query!inner (
+                id,
+                shipment_id,
+                logistics_company (
+                    id,
+                    name,
+                    contact_email
+                )
+            )
+        `)
+        .eq('freight_query.shipment_id', shipmentId);
+
+    if (error) {
+        console.error(error);
+        showToast('Error loading responses: ' + error.message, 'error');
+        return;
+    }
+
+    if (!responses || responses.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-info-circle"></i>
+                <h3>No quotes received yet</h3>
+                <p>Logistics companies have not submitted any quotes for this shipment yet.</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Check if shipment is already awarded
+    const { data: award } = await supabase
+        .from('shipment_awarded')
+        .select('*')
+        .eq('shipment_id', shipmentId)
+        .maybeSingle();
+
+    // Map responses with totals
+    const processedResponses = responses.map(r => {
+        const freight = Number(r.freight_charges || 0);
+        const containerCharges = Number(r.container_charges || 0);
+        const doCharges = Number(r.do_charges || 0);
+        const other = Number(r.other_charges || 0);
+        
+        const fRate = Number(r.freight_exchange_rate || 1);
+        const cRate = Number(r.container_exchange_rate || 1);
+        const dRate = Number(r.do_exchange_rate || 1);
+        const oRate = Number(r.other_exchange_rate || 1);
+
+        const totalNormalized = (freight * fRate) + (containerCharges * cRate) + (doCharges * dRate) + (other * oRate);
+
+        return {
+            ...r,
+            totalNormalized
+        };
+    });
+
+    // Find best price and speed
+    const minPrice = Math.min(...processedResponses.map(r => r.totalNormalized));
+    const minTime = Math.min(...processedResponses.map(r => Number(r.transit_time || 999)));
+
+    // Generate Cards HTML
+    let html = '<div class="comparison-grid">';
+    processedResponses.forEach(res => {
+        const companyName = res.freight_query.logistics_company.name;
+        const time = res.transit_time || 'N/A';
+        const isBestPrice = res.totalNormalized === minPrice;
+        const isFastest = Number(res.transit_time || 999) === minTime;
+        const isAwarded = award && award.freight_quote_response_id === res.id;
+
+        let cardClass = '';
+        let badgeHtml = '';
+        if (isAwarded) {
+            cardClass = 'awarded';
+            badgeHtml = '<span class="badge badge-awarded"><i class="fas fa-check-circle"></i> Awarded</span>';
+        } else if (isBestPrice) {
+            cardClass = 'best-price';
+            badgeHtml = '<span class="badge badge-price">Best Price</span>';
+        } else if (isFastest) {
+            cardClass = 'fastest';
+            badgeHtml = '<span class="badge badge-speed">Fastest</span>';
+        }
+
+        const getSym = (curr) => curr === 'USD' ? '$' : 'Rs';
+
+        html += `
+            <div class="quote-card ${cardClass}">
+                ${isAwarded ? '<div class="awarded-stripe"></div>' : ''}
+                ${badgeHtml}
+                <div class="quote-header">
+                    <div class="company-name">${companyName}</div>
+                    <div class="total-cost">${res.freight_charges ? '$' : 'Rs'} ${res.freight_charges?.toLocaleString() || '0'} <span style="font-size: 14px; font-weight: normal; color: #64748b;">(Base)</span></div>
+                </div>
+
+                <div class="cost-breakdown">
+                    ${isAwarded && award.notes ? `
+                    <div style="margin-bottom: 12px; background: rgba(16, 185, 129, 0.08); padding: 10px; border-radius: 6px; border-left: 3px solid #10b981; font-size: 13px;">
+                        <strong>Award Notes:</strong> "${award.notes}"
+                    </div>
+                    ` : ''}
+                    <div class="breakdown-row"><span>Freight:</span> <strong>${getSym(res.freight_currency)} ${res.freight_charges?.toLocaleString() || '0'}</strong></div>
+                    ${res.container_charges ? `<div class="breakdown-row"><span>Container Charges:</span> <strong>${getSym(res.container_currency)} ${res.container_charges?.toLocaleString() || '0'}</strong></div>` : ''}
+                    <div class="breakdown-row"><span>DO Charges:</span> <strong>${getSym(res.do_currency)} ${res.do_charges?.toLocaleString() || '0'}</strong></div>
+                    <div class="breakdown-row"><span>Other Charges:</span> <strong>${getSym(res.other_currency)} ${res.other_charges?.toLocaleString() || '0'}</strong></div>
+                    <div class="breakdown-row" style="border-top: 1px dashed #e2e8f0; margin-top: 5px; padding-top: 5px; font-weight: 700;">
+                        <span>Total (Est. PKR):</span><strong>Rs ${res.totalNormalized.toLocaleString()}</strong>
+                    </div>
+                </div>
+
+                <div class="metric-grid">
+                    <div class="metric-item"><i class="fas fa-clock"></i> Transit: <span class="metric-value">${time} Days</span></div>
+                    <div class="metric-item"><i class="fas fa-calendar-alt"></i> Arrival: <span class="metric-value">${res.tentative_arrival_date ? new Date(res.tentative_arrival_date).toLocaleDateString() : 'N/A'}</span></div>
+                    <div class="metric-item"><i class="fas ${shipment && shipment.mode_of_transport && shipment.mode_of_transport.toLowerCase().includes('sea') ? 'fa-ship' : 'fa-plane'}"></i> ${shipment && shipment.mode_of_transport && shipment.mode_of_transport.toLowerCase().includes('sea') ? 'Shipping Co' : 'Airline'}: <span class="metric-value">${res.airline || 'N/A'}</span></div>
+                    <div class="metric-item"><i class="fas fa-calendar"></i> Schedule: <span class="metric-value">${res.flight_schedule || 'N/A'}</span></div>
+                    <div class="metric-item" style="grid-column: span 2;"><i class="fas fa-envelope-open-text"></i> Received: <span class="metric-value">${new Date(res.received_at).toLocaleDateString()}</span></div>
+                </div>
+
+                ${res.notes ? `<div style="font-size: 13px; color: #64748b; margin-bottom: 15px; font-style: italic;">"${res.notes}"</div>` : ''}
+
+                <div class="quote-footer">
+                    ${!award && !res.is_unlocked ? `<button class="button button-warning request-revision-btn" style="flex: 1; min-width: 100%;" data-id="${res.id}" data-company="${companyName}" data-email="${res.freight_query.logistics_company.contact_email}" data-query="${res.freight_query.id}"><i class="fas fa-undo"></i> Request Revised Quote</button>` : ''}
+                    ${res.is_unlocked ? `<div style="flex: 1; min-width: 100%; text-align: center; font-size: 13px; color: #f59e0b; background: #fef3c7; padding: 8px; border-radius: 6px; border: 1px dashed #f59e0b;"><i class="fas fa-unlock"></i> Revision Requested</div>` : ''}
+                    ${res.attachment_url ? `<a href="${res.attachment_url}" target="_blank" class="button-outline" style="flex: 1;"><i class="fas fa-file-pdf"></i> View PDF</a>` : ''}
+                    ${!award ? `<button class="button award-btn" style="flex: 1;" data-id="${res.id}" data-company="${companyName}" data-query="${res.freight_query.id}">Award</button>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+
+    // Attach listeners
+    document.querySelectorAll('.award-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => openAwardModal(e.target.dataset.id, e.target.dataset.company, e.target.dataset.query));
+    });
+
+    document.querySelectorAll('.request-revision-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const btnEl = e.target.closest('.request-revision-btn');
+            const quoteId = btnEl.dataset.id;
+            const company = btnEl.dataset.company;
+            const email = btnEl.dataset.email;
+            const queryId = btnEl.dataset.query;
+
+            if(confirm('Are you sure you want to request a revised quote from ' + company + '? This will unlock their form.')) {
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting...';
+                try {
+                    const { error } = await supabase.rpc('request_quote_revision', { p_quote_id: quoteId });
+                    if (error) throw error;
+                    
+                    if(email && email !== 'null' && email !== 'undefined') {
+                        const quoteUrl = `${window.location.origin}/quote-submission.html?freight_query_id=${queryId}`;
+                        const shipmentId = document.getElementById('shipment-filter').value;
+                        const shipment = allShipments.find(s => s.id === shipmentId);
+                        const shipmentRef = shipment ? shipment.reference_code : '';
+
+                        await supabase.functions.invoke('send-freight-query-email', {
+                            body: { email: email, quote_url: quoteUrl, is_revision: true, shipment_ref: shipmentRef }
+                        });
+                    }
+                    alert('Revision requested successfully.');
+                    loadResponses();
+                } catch(err) {
+                    console.error(err);
+                    alert('Error requesting revision: ' + err.message);
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = '<i class="fas fa-undo"></i> Request Revised Quote';
+                }
+            }
+        });
+    });
+  }
+
+  function openAwardModal(responseId, companyName, queryId) {
+      currentAwardData = { responseId, queryId, shipmentId: document.getElementById('shipment-filter').value };
+      document.getElementById('award-info').innerHTML = `
+        <p>You are about to award this shipment to <strong>${companyName}</strong>.</p>
+        <p style="font-size: 13px; color: var(--text-secondary-color);">This will record the decision and move the shipment to the next stage.</p>
+      `;
+      document.getElementById('award-modal').classList.add('show');
+  }
+
+  async function confirmAward() {
+      const btn = document.getElementById('confirm-award-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+      try {
+          const { data: { user } } = await supabase.auth.getUser();
+          const { error: awardError } = await supabase.from('shipment_awarded').insert({
+                shipment_id: currentAwardData.shipmentId,
+                freight_query_id: currentAwardData.queryId,
+                freight_quote_response_id: currentAwardData.responseId,
+                awarded_by: user.id,
+                awarded: true,
+                notes: document.getElementById('award-notes').value
+          });
+          if (awardError) throw awardError;
+
+          const { error: stageError } = await supabase.rpc('advance_stage', {
+              p_shipment_id: currentAwardData.shipmentId, p_to_stage: 'award_shipment'
+          });
+
+          document.getElementById('award-modal').classList.remove('show');
+          loadResponses();
+          showToast('Shipment awarded successfully!', 'success');
+      } catch (err) {
+          console.error(err);
+          showToast('Error awarding shipment: ' + err.message, 'error');
+      } finally {
+          btn.disabled = false;
+          btn.innerHTML = 'Confirm Award';
+      }
+  }
+
+  window.onload = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    await loadFilters();
+
+    document.getElementById('close-modal').addEventListener('click', () => {
+        document.getElementById('award-modal').classList.remove('show');
+    });
+
+    document.getElementById('confirm-award-btn').addEventListener('click', confirmAward);
+
+    // Sidebar Logic
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarToggle = document.querySelector('.sidebar-toggle');
+    const hasSubmenus = document.querySelectorAll('.has-submenu');
+
+    sidebarToggle?.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+
+    hasSubmenus.forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.has-submenu') === item) {
           e.preventDefault();
           const submenu = item.nextElementSibling;
           if (submenu && submenu.classList.contains('submenu')) {
             submenu.classList.toggle('open');
             item.classList.toggle('open');
           }
-        });
-      });
-
-      const currentPath = window.location.pathname.split('/').pop();
-      navLinks.forEach(link => {
-        if (link.href.split('/').pop() === currentPath) {
-          link.classList.add('active');
-          let parentSubmenu = link.closest('.submenu');
-          if (parentSubmenu) {
-            parentSubmenu.classList.add('open');
-            let parentHasSubmenu = parentSubmenu.previousElementSibling;
-            if (parentHasSubmenu && parentHasSubmenu.classList.contains('has-submenu')) {
-              parentHasSubmenu.classList.add('open');
-            }
-          }
         }
       });
     });
+  };
 </script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>

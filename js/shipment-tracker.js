@@ -996,7 +996,16 @@
         // Fetch shipment award info for special display in timeline
         const { data: awardInfo } = await supabase
             .from('shipment_awarded')
-            .select('awarded_at')
+            .select(`
+                awarded_at,
+                freight_quote_response (
+                    freight_query (
+                        logistics_company (
+                            name
+                        )
+                    )
+                )
+            `)
             .eq('shipment_id', shipmentId)
             .maybeSingle();
 
@@ -1055,7 +1064,9 @@
             // Special handling for award_shipment date display
             if (stageKey === 'award_shipment' && awardInfo && awardInfo.awarded_at) {
                 const awardDate = new Date(awardInfo.awarded_at);
-                timeText = `Awarded on ${awardDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`;
+                const companyName = awardInfo.freight_quote_response?.freight_query?.logistics_company?.name;
+                const companySuffix = companyName ? ` to ${companyName}` : '';
+                timeText = `Awarded${companySuffix} on ${awardDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`;
             }
 
             let durationText = '';
