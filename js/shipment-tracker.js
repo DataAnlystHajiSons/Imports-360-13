@@ -416,7 +416,7 @@
         const hasDisabledCommodity = commodities.some(c => disabledCommodities.includes(c.toLowerCase()));
         
         if (hasDisabledCommodity) {
-            activeStageOrder = activeStageOrder.filter(stage => stage !== 'forecast' && stage !== 'enlistment_verification');
+            activeStageOrder = activeStageOrder.filter(stage => stage !== 'forecast' && stage !== 'enlistment_verification' && stage !== 'release_orders');
         }
 
         let currentStageIndex = activeStageOrder.indexOf(data.current_stage);
@@ -619,6 +619,7 @@
                         field.name === 'freight_quote_response_id' ||
                         field.name === 'amendment_da_amount' ||
                         field.name === 'amendment_da_date' ||
+                        (hasDisabledCommodity && field.name === 'frsd_application_date') ||
                         field.name.includes('url')
                     ) return;
                     totalFields++;
@@ -1045,6 +1046,7 @@
                         field.name === 'freight_quote_response_id' ||
                         field.name === 'amendment_da_amount' ||
                         field.name === 'amendment_da_date' ||
+                        (hasDisabledCommodity && field.name === 'frsd_application_date') ||
                         field.name.includes('url')
                     ) return;
                     
