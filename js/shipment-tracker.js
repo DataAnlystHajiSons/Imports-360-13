@@ -277,9 +277,11 @@
                 { name: "final_payment", type: "number", label: "Final Payment" },
                 { name: "invoice_charges", type: "number", label: "Invoice Charges" },
                 { name: "exchange_rate", type: "number", label: "Exchange Rate" },
+                { name: "pkr_amount", type: "number", label: "PKR Amount", readonly: true },
                 { name: "ip_charges", type: "number", label: "IP Charges" },
                 { name: "bank_contract_opening_charges", type: "number", label: "Bank Contract Opening Charges" },
                 { name: "shipping_guarantee", type: "number", label: "Shipping Guarantee" },
+                { name: "fscrd_charges", type: "number", label: "FSCRD Charges" },
                 { name: "fbr_duty", type: "number", label: "FBR Duty" },
                 { name: "forwarder_charges", type: "number", label: "Forwarder Charges" },
                 { name: "clearing_charges", type: "number", label: "Clearing Charges" },
@@ -412,6 +414,7 @@
         const commodities = data.shipment_products
             ?.map(sp => sp.product_variety?.commodity?.name)
             .filter(name => name) || [];
+        window.currentShipmentCommodities = commodities;
         const disabledCommodities = ["solar", "grain pro", "peat moss", "hermetic grainpro cocoon indoor 150 cbm", "hermetic cocoon indoor 150 cbm", "equipment", "dripper"];
         const hasDisabledCommodity = commodities.some(c => disabledCommodities.includes(c.toLowerCase()));
         
@@ -1329,6 +1332,10 @@
             }
         } else {
             for (const field of currentStageData.config.fields) {
+                if (field.name === 'fscrd_charges' && (!window.currentShipmentCommodities || !window.currentShipmentCommodities.some(c => c.toLowerCase() === 'seed'))) {
+                    continue;
+                }
+
                 let value = currentStageData.details[field.name];
                 let displayValue = value;
 
@@ -4973,12 +4980,13 @@ Direct Data Count: ${directData?.length || 0}`);
 
     function setupBillsCalculations() {
         const inputs = [
-            'ip_charges', 'bank_contract_opening_charges', 'shipping_guarantee', 'fbr_duty',
+            'invoice_charges', 'exchange_rate',
+            'ip_charges', 'bank_contract_opening_charges', 'shipping_guarantee', 'fscrd_charges', 'fbr_duty',
             'forwarder_charges', 'clearing_charges', 'local_transporter', 'port_charges',
             'final_payment_charges', 'final_payment', 'qty'
         ];
 
-        const outputFields = ['total', 'total_cost', 'oh_perc', 'per_unit_rate'];
+        const outputFields = ['pkr_amount', 'total', 'total_cost', 'oh_perc', 'per_unit_rate'];
 
         const getVal = (id) => {
             const el = document.getElementById(id);
@@ -4991,9 +4999,15 @@ Direct Data Count: ${directData?.length || 0}`);
         };
 
         const calculate = () => {
+            const invoice = getVal('invoice_charges');
+            const exchange = getVal('exchange_rate');
+            const pkrAmount = invoice * exchange;
+            setVal('pkr_amount', pkrAmount);
+
             const ip = getVal('ip_charges');
             const bank = getVal('bank_contract_opening_charges');
             const shipping = getVal('shipping_guarantee');
+            const fscrd = getVal('fscrd_charges');
             const fbr = getVal('fbr_duty');
             const forwarder = getVal('forwarder_charges');
             const clearing = getVal('clearing_charges');
@@ -5004,16 +5018,16 @@ Direct Data Count: ${directData?.length || 0}`);
             const finalPayment = getVal('final_payment');
             const qty = getVal('qty');
 
-            // 1. Total
-            const total = ip + bank + shipping + fbr + forwarder + clearing + local + port + finalCharges;
+            // 1. Total (Total Shipment Expense)
+            const total = ip + bank + shipping + fscrd + fbr + forwarder + clearing + local + port + finalCharges;
             setVal('total', total);
 
             // 2. Total Cost
             const totalCost = total + finalPayment;
             setVal('total_cost', totalCost);
 
-            // 3. OH % (Ratio as per request)
-            const ohPerc = finalPayment !== 0 ? (total / finalPayment) : 0;
+            // 3. OH % (Total Shipment Expense / Total Value of Shipment in PKR * 100)
+            const ohPerc = pkrAmount !== 0 ? (total / pkrAmount) * 100 : 0;
             setVal('oh_perc', ohPerc);
 
             // 4. Per Unit Rate
