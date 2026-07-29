@@ -336,7 +336,7 @@
         
         const { data, error } = await supabase
             .from("shipment")
-            .select("*, payment_terms(name), shipment_products(*, product_variety(*, supplier(name)))")
+            .select("*, payment_terms(name), shipment_products(*, product_variety(*, supplier(name), commodity(name)))")
             .eq("id", shipmentId)
             .single();
 
@@ -407,6 +407,16 @@
         }
         if (['LC at Sight', 'Advance Payment', 'CAD', 'Dp at Sight', 'DP at Sight'].includes(paymentTerm)) {
             activeStageOrder = activeStageOrder.filter(stage => stage !== 'bank_endorsement');
+        }
+
+        const commodities = data.shipment_products
+            ?.map(sp => sp.product_variety?.commodity?.name)
+            .filter(name => name) || [];
+        const disabledCommodities = ["solar", "grain pro", "peat moss", "hermetic grainpro cocoon indoor 150 cbm", "hermetic cocoon indoor 150 cbm", "equipment", "dripper"];
+        const hasDisabledCommodity = commodities.some(c => disabledCommodities.includes(c.toLowerCase()));
+        
+        if (hasDisabledCommodity) {
+            activeStageOrder = activeStageOrder.filter(stage => stage !== 'forecast' && stage !== 'enlistment_verification');
         }
 
         let currentStageIndex = activeStageOrder.indexOf(data.current_stage);
