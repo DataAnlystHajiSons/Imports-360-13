@@ -5023,7 +5023,7 @@ Direct Data Count: ${directData?.length || 0}`);
             setVal('total', total);
 
             // 2. Total Cost
-            const totalCost = total + finalPayment;
+            const totalCost = total + pkrAmount;
             setVal('total_cost', totalCost);
 
             // 3. OH % (Total Shipment Expense / Total Value of Shipment in PKR * 100)
