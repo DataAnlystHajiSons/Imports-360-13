@@ -1337,9 +1337,44 @@
                 }
 
                 let value = currentStageData.details[field.name];
+
+                // Dynamically calculate and display calculations on the fly in View Mode
+                if (currentStageData.stageName === 'bills') {
+                    const getDet = (name) => parseFloat(currentStageData.details[name]) || 0;
+                    const invoice = getDet('invoice_charges');
+                    const exchange = getDet('exchange_rate');
+                    const pkrAmount = invoice * exchange;
+                    
+                    const ip = getDet('ip_charges');
+                    const bank = getDet('bank_contract_opening_charges');
+                    const shipping = getDet('shipping_guarantee');
+                    const fscrd = getDet('fscrd_charges');
+                    const fbr = getDet('fbr_duty');
+                    const forwarder = getDet('forwarder_charges');
+                    const clearing = getDet('clearing_charges');
+                    const local = getDet('local_transporter');
+                    const port = getDet('port_charges');
+                    const finalCharges = getDet('final_payment_charges');
+                    const finalPayment = getDet('final_payment');
+                    const qty = getDet('qty');
+
+                    const total = ip + bank + shipping + fscrd + fbr + forwarder + clearing + local + port + finalCharges;
+                    const totalCost = total + pkrAmount;
+                    const ohPerc = pkrAmount !== 0 ? (total / pkrAmount) * 100 : 0;
+                    const perUnitRate = qty !== 0 ? (totalCost / qty) : 0;
+
+                    if (field.name === 'pkr_amount') value = pkrAmount;
+                    else if (field.name === 'total') value = total;
+                    else if (field.name === 'total_cost') value = totalCost;
+                    else if (field.name === 'oh_perc') value = ohPerc;
+                    else if (field.name === 'per_unit_rate') value = perUnitRate;
+                }
+
                 let displayValue = value;
 
-                if (value === null || value === undefined || value === 'null') {
+                if (currentStageData.stageName === 'bills' && typeof value === 'number') {
+                    displayValue = isFinite(value) ? value.toFixed(2) : '0.00';
+                } else if (value === null || value === undefined || value === 'null') {
                     displayValue = 'N/A';
                 }
 
