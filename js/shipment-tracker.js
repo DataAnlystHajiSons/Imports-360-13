@@ -4761,8 +4761,8 @@ Direct Data Count: ${directData?.length || 0}`);
                         <div class="doc-info-name">${doc.doc_name}</div>
                         <div class="doc-info-desc">${doc.description || ''}</div>
                     </div>
-                    <span class="doc-mandatory-badge ${doc.is_mandatory ? 'mandatory' : 'optional'}">
-                        ${doc.is_mandatory ? 'Required' : 'Optional'}
+                    <span class="doc-mandatory-badge ${doc.is_uploaded ? 'uploaded' : (doc.is_mandatory ? 'mandatory' : 'optional')}">
+                        ${doc.is_uploaded ? 'Uploaded' : (doc.is_mandatory ? 'Required' : 'Optional')}
                     </span>
                 `;
                 list.appendChild(item);

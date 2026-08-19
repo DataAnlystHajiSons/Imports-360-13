@@ -1740,6 +1740,11 @@ body {
   color: #6366f1;
 }
 
+.doc-mandatory-badge.uploaded {
+  background: #d1fae5;
+  color: #059669;
+}
+
 .documents-upload-section {
   background: #f9f9f9;
   padding: 20px;
