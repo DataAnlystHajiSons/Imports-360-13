@@ -4745,9 +4745,26 @@ Direct Data Count: ${directData?.length || 0}`);
                 badge.classList.add('incomplete');
             }
             
+            // Clear dynamic document group first
+            const dynamicGroup = document.getElementById('dynamic-doc-group');
+            if (dynamicGroup) {
+                dynamicGroup.innerHTML = '';
+            }
+            const existingOptions = Array.from(document.querySelectorAll('#doc_type option:not(#dynamic-doc-group option)')).map(opt => opt.value);
+
             // Render checklist
             list.innerHTML = '';
             data.forEach(doc => {
+                // Dynamically add to dropdown if missing
+                if (dynamicGroup && !existingOptions.includes(doc.doc_type)) {
+                    if (!dynamicGroup.querySelector(`option[value="${doc.doc_type}"]`)) {
+                        const option = document.createElement('option');
+                        option.value = doc.doc_type;
+                        option.textContent = doc.doc_name;
+                        dynamicGroup.appendChild(option);
+                    }
+                }
+
                 const item = document.createElement('div');
                 const statusClass = doc.is_uploaded ? 'uploaded' : 'missing';
                 const optionalClass = doc.is_mandatory ? '' : 'optional';
