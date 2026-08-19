@@ -53,7 +53,9 @@ INSERT INTO required_document_config (mode_of_transport, inco_term, doc_type, do
 
 -- Other common documents
 ('sea', NULL, 'other', 'Other Document', 'Miscellaneous documents', false),
-('air', NULL, 'other', 'Other Document', 'Miscellaneous documents', false)
+('air', NULL, 'other', 'Other Document', 'Miscellaneous documents', false),
+('sea', NULL, 'phytosanitary_certificate', 'Phyto Certificate', 'Phytosanitary certificate for plants/seeds', false),
+('air', NULL, 'phytosanitary_certificate', 'Phyto Certificate', 'Phytosanitary certificate for plants/seeds', false)
 
 ON CONFLICT (mode_of_transport, inco_term, doc_type) DO UPDATE SET
   doc_name = EXCLUDED.doc_name,
