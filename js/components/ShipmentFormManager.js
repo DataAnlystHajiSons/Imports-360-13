@@ -133,6 +133,13 @@ export class ShipmentFormManager {
     
     // Form submit
     this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+    if (this.submitBtn) {
+      this.submitBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('Create Shipment button clicked directly');
+        this.handleSubmit(e);
+      });
+    }
     
     // Product management
     this.addProductBtn.addEventListener('click', () => this.addProductRow());
