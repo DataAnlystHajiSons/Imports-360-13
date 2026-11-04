@@ -583,11 +583,119 @@
         };
         const displayStatusText = statusDisplayNames[rawStatus] || rawStatus.toUpperCase();
 
+        // Helper function for mandatory cancellation reason modal
+        function requestCancellationReason() {
+          return new Promise((resolve) => {
+            let modal = document.getElementById('cancellation-reason-modal');
+            if (modal) modal.remove();
+
+            modal = document.createElement('div');
+            modal.id = 'cancellation-reason-modal';
+            modal.className = 'modal show';
+            modal.style.cssText = 'position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px);';
+            
+            modal.innerHTML = `
+              <div class="modal-content" style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 480px; padding: 26px; box-shadow: 0 25px 50px rgba(0,0,0,0.25); border: 1px solid #fee2e2; transform: scale(1); opacity: 1; margin: auto;">
+                <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
+                  <div style="width: 42px; height: 42px; border-radius: 50%; background: #fee2e2; color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+                    <i class="fas fa-ban"></i>
+                  </div>
+                  <div>
+                    <h3 style="margin: 0; font-size: 1.2rem; color: #1e293b; font-weight: 700;">Cancel Shipment</h3>
+                    <p style="margin: 3px 0 0 0; font-size: 0.83rem; color: #64748b;">A cancellation reason is required to proceed.</p>
+                  </div>
+                </div>
+                <div style="margin: 18px 0;">
+                  <label for="cancellation-reason-textarea" style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">
+                    Reason for Cancellation <span style="color: #ef4444;">*</span>
+                  </label>
+                  <textarea id="cancellation-reason-textarea" rows="3" placeholder="Please state why this shipment is being cancelled (required)..." style="width: 100%; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 0.9rem; resize: vertical; outline: none; box-sizing: border-box;"></textarea>
+                  <div id="cancellation-reason-error" style="display: none; color: #ef4444; font-size: 0.8rem; margin-top: 5px; font-weight: 600;">
+                    <i class="fas fa-exclamation-circle"></i> Cancellation reason is required.
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px;">
+                  <button type="button" id="cancellation-abort-btn" style="padding: 9px 18px; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; border-radius: 8px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">
+                    Keep Active
+                  </button>
+                  <button type="button" id="cancellation-confirm-btn" style="padding: 9px 18px; border: none; background: #ef4444; color: white; border-radius: 8px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">
+                    Confirm Cancellation
+                  </button>
+                </div>
+              </div>
+            `;
+
+            document.body.appendChild(modal);
+            const textarea = document.getElementById('cancellation-reason-textarea');
+            const errorEl = document.getElementById('cancellation-reason-error');
+            const abortBtn = document.getElementById('cancellation-abort-btn');
+            const confirmBtn = document.getElementById('cancellation-confirm-btn');
+
+            textarea.focus();
+
+            const cleanup = () => {
+              modal.remove();
+            };
+
+            abortBtn.onclick = () => {
+              cleanup();
+              resolve(null);
+            };
+
+            confirmBtn.onclick = () => {
+              const reason = textarea.value.trim();
+              if (!reason) {
+                errorEl.style.display = 'block';
+                textarea.style.borderColor = '#ef4444';
+                textarea.focus();
+                return;
+              }
+              cleanup();
+              resolve(reason);
+            };
+
+            textarea.oninput = () => {
+              if (textarea.value.trim()) {
+                errorEl.style.display = 'none';
+                textarea.style.borderColor = '#cbd5e1';
+              }
+            };
+
+            textarea.onkeydown = (ev) => {
+              if (ev.key === 'Escape') {
+                cleanup();
+                resolve(null);
+              }
+            };
+          });
+        }
+
         if (statusTextEl) {
           statusTextEl.textContent = displayStatusText;
         }
         if (statusContainer) {
           statusContainer.className = `shipment-status editable-badge ${rawStatus}`;
+          if (rawStatus === 'cancelled' && data.cancellation_reason) {
+            statusContainer.title = `Cancelled: ${data.cancellation_reason} (Click to change status)`;
+          } else {
+            statusContainer.title = 'Click to change status';
+          }
+
+          // Show cancellation reason badge if cancelled
+          let cancelReasonEl = document.getElementById('cancellationReasonBadge');
+          if (rawStatus === 'cancelled' && data.cancellation_reason) {
+            if (!cancelReasonEl) {
+              cancelReasonEl = document.createElement('div');
+              cancelReasonEl.id = 'cancellationReasonBadge';
+              cancelReasonEl.style.cssText = 'font-size: 0.72rem; color: #dc2626; background: #fee2e2; border-radius: 6px; padding: 2px 8px; margin: 2px 0 4px 0; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;';
+              statusContainer.parentNode.insertBefore(cancelReasonEl, statusContainer.nextSibling);
+            }
+            cancelReasonEl.innerHTML = `<i class="fas fa-ban"></i> Reason: ${data.cancellation_reason}`;
+            cancelReasonEl.title = `Cancellation Reason: ${data.cancellation_reason}`;
+            cancelReasonEl.style.display = 'block';
+          } else if (cancelReasonEl) {
+            cancelReasonEl.style.display = 'none';
+          }
           
           statusContainer.onclick = function(e) {
             if (document.getElementById('inlineStatusSelect')) return;
@@ -627,21 +735,44 @@
             const saveStatusChanges = async () => {
               const newVal = selectHtml.value;
               if (newVal !== currentVal) {
-                if (newVal === 'cancelled' && !confirm('Are you sure you want to mark this shipment as CANCELLED?')) {
-                  statusContainer.innerHTML = originalHtml;
-                  return;
+                let cancellationReason = null;
+                if (newVal === 'cancelled') {
+                  cancellationReason = await requestCancellationReason();
+                  if (!cancellationReason) {
+                    statusContainer.innerHTML = originalHtml;
+                    return;
+                  }
                 }
 
                 statusContainer.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                
+                const updatePayload = { status: newVal };
+                if (newVal === 'cancelled' && cancellationReason) {
+                  updatePayload.cancellation_reason = cancellationReason;
+                } else if (newVal !== 'cancelled') {
+                  updatePayload.cancellation_reason = null;
+                }
+
                 try {
-                  const { error } = await supabase
+                  let { error } = await supabase
                     .from('shipment')
-                    .update({ status: newVal })
+                    .update(updatePayload)
                     .eq('id', shipmentId);
 
-                  if (error) throw error;
+                  if (error && error.message && error.message.includes('cancellation_reason')) {
+                    const fallback = await supabase
+                      .from('shipment')
+                      .update({ status: newVal })
+                      .eq('id', shipmentId);
+                    if (fallback.error) throw fallback.error;
+                    alert('Shipment cancelled! (Note: Please run migration 26_add_cancellation_reason_to_shipment.sql in Supabase to permanently store cancellation reasons).');
+                  } else if (error) {
+                    throw error;
+                  }
 
                   data.status = newVal;
+                  if (cancellationReason) data.cancellation_reason = cancellationReason;
+                  else if (newVal !== 'cancelled') data.cancellation_reason = null;
                   await initializeTracker();
                 } catch (err) {
                   console.error('Error updating status:', err);
