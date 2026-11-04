@@ -573,6 +573,26 @@
         
         document.querySelector('.shipment-status').textContent = data.status;
 
+        // Populate Start Date and Last Activity Date in center hub
+        function formatTrackerDate(dateString) {
+            if (!dateString) return 'N/A';
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return 'N/A';
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        const startDateEl = document.getElementById('trackerStartDate');
+        const lastActivityEl = document.getElementById('trackerLastActivity');
+        if (startDateEl) {
+            startDateEl.textContent = formatTrackerDate(data.created_at);
+            if (data.created_at) startDateEl.parentElement.title = `Start Date: ${new Date(data.created_at).toLocaleString()}`;
+        }
+        if (lastActivityEl) {
+            const lastActivity = data.latest_activity_at || data.created_at;
+            lastActivityEl.textContent = formatTrackerDate(lastActivity);
+            if (lastActivity) lastActivityEl.parentElement.title = `Last Activity Date: ${new Date(lastActivity).toLocaleString()}`;
+        }
+
         // Check if documents are uploaded (for circular tracker)
         const { data: documentsData, error: docsError } = await supabase
             .from('document')

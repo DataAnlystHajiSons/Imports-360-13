@@ -6,7 +6,7 @@
   <title>Advanced Shipment Tracker</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="css/shipment-tracker.css">
+  <link rel="stylesheet" href="css/shipment-tracker.css?v=2.1">
   <link rel="stylesheet" href="css/stage-target-dates.css">
   <!-- Select2 for searchable dropdowns -->
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -44,6 +44,17 @@
                 <span id="currencyRateValue">USD (@ 278.50)</span>
                 <i class="fas fa-pencil-alt edit-icon"></i>
               </span>
+            </div>
+            <div class="shipment-dates-display" id="shipmentDatesDisplay">
+              <div class="date-stat" title="Shipment Start Date">
+                <div class="date-stat-label"><i class="far fa-calendar-alt"></i> Start Date</div>
+                <div class="date-stat-value" id="trackerStartDate">-</div>
+              </div>
+              <div class="date-stat-divider"></div>
+              <div class="date-stat" title="Last Activity Date">
+                <div class="date-stat-label"><i class="fas fa-history"></i> Last Activity Date</div>
+                <div class="date-stat-value" id="trackerLastActivity">-</div>
+              </div>
             </div>
             <div class="progress-stats">
               <div class="stat">
@@ -1275,7 +1286,7 @@
       });
   </script>
 
-  <script type="module" src="js/shipment-tracker.js?v=3.1"></script>
+  <script type="module" src="js/shipment-tracker.js?v=3.2"></script>
   <script src="js/supplier-helpers.js"></script>
 </body>
 </html>
