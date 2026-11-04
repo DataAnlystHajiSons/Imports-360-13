@@ -125,7 +125,7 @@
         "lc_opening": {
             table: "letter_of_credit",
             fields: [
-                { name: "lc_number", type: "text", label: "LC Number" },
+                { name: "lc_number", type: "text", label: "LC/Bank Contract Number" },
                 { name: "opened_date", type: "date", label: "Opened Date" },
                 { name: "lc_shared_date", type: "date", label: "Shared with Supplier Date" },
                 { name: "notes", type: "textarea", label: "Notes" },
@@ -1611,7 +1611,7 @@
                 
                 // Define Incoterms options based on mode of transport
                 const incotermsOptions = {
-                    'sea': ['EXW', 'FOB', 'CFR', 'DDP'],
+                    'sea': ['EXW', 'FOB', 'CFR', 'CPT', 'FCA', 'DDP'],
                     'air': ['EXW', 'FCA', 'CPT', 'DDP']
                 };
                 

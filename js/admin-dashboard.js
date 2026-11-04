@@ -1,6 +1,6 @@
 import { enforcePageAccess, filterSidebarByRole } from './auth-utils.js';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.4";
-import { ShipmentFormManager } from './components/ShipmentFormManager.js?v=2.3';
+import { ShipmentFormManager } from './components/ShipmentFormManager.js?v=2.4';
 import { ShipmentService } from './services/ShipmentService.js';
 import { CommodityService } from './services/CommodityService.js';
 
@@ -93,6 +93,112 @@ function getStatusBadge(status) {
   </div>`;
 }
 
+/**
+ * Calculates a case-insensitive search relevance score for a shipment against a search query.
+ * Higher scores indicate higher relevance and priority in search results.
+ */
+function calculateSearchRelevance(shipment, rawQuery) {
+  if (!rawQuery) return 0;
+  const q = rawQuery.trim().toLowerCase();
+  if (!q) return 0;
+
+  const cleanQuery = q.replace(/[^a-z0-9]/g, '');
+
+  const ref = (shipment.reference_code || '').trim().toLowerCase();
+  const cleanRef = ref.replace(/[^a-z0-9]/g, '');
+
+  const prod = (shipment.product_name || '').trim().toLowerCase();
+  const variety = (shipment.variety_name || '').trim().toLowerCase();
+  const sup = (shipment.supplier_name || '').trim().toLowerCase();
+  const lc = (shipment.lc_number || '').trim().toLowerCase();
+
+  // Multi-product shipments
+  const secondaryProducts = [];
+  const secondaryVarieties = [];
+  if (Array.isArray(shipment.product_variety)) {
+    shipment.product_variety.forEach(pv => {
+      if (pv.product_name) secondaryProducts.push(pv.product_name.trim().toLowerCase());
+      if (pv.variety_name) secondaryVarieties.push(pv.variety_name.trim().toLowerCase());
+    });
+  }
+
+  // Tier 1: Exact reference code match (e.g. "d-670" === "d-670")
+  if (ref === q) return 10000;
+
+  // Tier 2: Normalized exact reference code match (e.g. "d670" or "d 670" matches "D-670")
+  if (cleanQuery && cleanRef === cleanQuery) return 9800;
+
+  // Tier 3: Primary product exact match (e.g. "tomato" === "Tomato")
+  if (prod === q) return 9500;
+
+  // Tier 4: Secondary product exact match
+  if (secondaryProducts.some(p => p === q)) return 9000;
+
+  // Tier 5: Reference code starts with query (e.g. "d" -> "D-670", "d-6" -> "D-670")
+  if (ref.startsWith(q)) {
+    return 8000 - Math.min(ref.length - q.length, 500);
+  }
+
+  // Tier 6: Clean reference starts with clean query (e.g. "d67" -> "D-670")
+  if (cleanQuery && cleanRef.startsWith(cleanQuery)) {
+    return 7800 - Math.min(cleanRef.length - cleanQuery.length, 500);
+  }
+
+  // Tier 7: Primary product starts with query (e.g. "tom" or "t" -> "Tomato")
+  if (prod.startsWith(q)) {
+    return 7000 - Math.min(prod.length - q.length, 500);
+  }
+
+  // Tier 8: Secondary product starts with query
+  if (secondaryProducts.some(p => p.startsWith(q))) {
+    return 6500;
+  }
+
+  // Tier 9: Word boundary match in product name (e.g. "Hyb Tomato" has word "Tomato")
+  const prodWords = prod.split(/[\s\-_/]+/);
+  if (prodWords.some(w => w.startsWith(q))) {
+    return 6000;
+  }
+  const secWordsMatch = secondaryProducts.some(p => 
+    p.split(/[\s\-_/]+/).some(w => w.startsWith(q))
+  );
+  if (secWordsMatch) {
+    return 5500;
+  }
+
+  // Tier 10: Variety name matches
+  if (variety === q) return 5000;
+  if (variety.startsWith(q)) return 4800;
+  if (secondaryVarieties.some(v => v === q)) return 4500;
+  if (secondaryVarieties.some(v => v.startsWith(q))) return 4300;
+
+  // Tier 11: Reference code contains query
+  if (ref.includes(q) || (cleanQuery.length >= 2 && cleanRef.includes(cleanQuery))) {
+    return 4000;
+  }
+
+  // Tier 12: Primary product contains query
+  if (prod.includes(q)) return 3500;
+
+  // Tier 13: Secondary product contains query
+  if (secondaryProducts.some(p => p.includes(q))) return 3000;
+
+  // Tier 14: Variety contains query
+  if (variety.includes(q) || secondaryVarieties.some(v => v.includes(q))) {
+    return 2500;
+  }
+
+  // Tier 15: Supplier matches
+  if (sup.startsWith(q)) return 2000;
+  if (sup.split(/[\s\-_/]+/).some(w => w.startsWith(q))) return 1800;
+  if (sup.includes(q)) return 1500;
+
+  // Tier 16: LC number matches
+  if (lc.includes(q)) return 1000;
+
+  return 100;
+}
+
 async function loadShipments(searchTerm = '', filters = {}) {
   // Show loading state
   showTableLoading(true);
@@ -149,7 +255,33 @@ async function loadShipments(searchTerm = '', filters = {}) {
           uniqueShipmentsMap.set(shipment.id, shipment);
       }
   });
-  const uniqueData = Array.from(uniqueShipmentsMap.values());
+  let uniqueData = Array.from(uniqueShipmentsMap.values());
+
+  // Sort shipments: if search term provided, sort by case-insensitive relevance; otherwise by created_at desc
+  const trimmedSearchTerm = (searchTerm || '').trim();
+  if (trimmedSearchTerm) {
+    uniqueData.sort((a, b) => {
+      const scoreA = calculateSearchRelevance(a, trimmedSearchTerm);
+      const scoreB = calculateSearchRelevance(b, trimmedSearchTerm);
+      if (scoreB !== scoreA) {
+        return scoreB - scoreA;
+      }
+      // Tie breaker 1: Length difference to query for closer match
+      const refA = (a.reference_code || '').trim();
+      const refB = (b.reference_code || '').trim();
+      if (refA.length !== refB.length) {
+        return refA.length - refB.length;
+      }
+      // Tie breaker 2: Natural alphanumeric order
+      const refComp = refA.localeCompare(refB, undefined, { numeric: true });
+      if (refComp !== 0) return refComp;
+      // Tie breaker 3: Newest first
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
+  } else {
+    // Default order when not searching: newest first
+    uniqueData.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }
 
   let html = "";
   uniqueData.forEach(s => {
@@ -329,6 +461,9 @@ async function loadShipments(searchTerm = '', filters = {}) {
     });
   });
 }
+
+// Make loadShipments globally accessible
+window.loadShipments = loadShipments;
 
 function debounce(func, delay) {
   let timeout;
@@ -1073,12 +1208,20 @@ window.onload = async () => {
 
     const searchInput = document.getElementById('shipment-search');
     searchInput.addEventListener('input', debounce((e) => {
+      // Reset table header sort indicators when user searches
+      document.querySelectorAll('.sortable').forEach(h => {
+        const sortIcon = h.querySelector('.sort-icon');
+        if (sortIcon) sortIcon.className = 'fas fa-sort sort-icon';
+        h.classList.remove('sorted-asc', 'sorted-desc');
+      });
+
       const filters = {
             supplier_id: document.getElementById('supplier-filter').value || null,
             clearing_agent_id: document.getElementById('clearing-agent-filter').value || null,
             bank_id: document.getElementById('bank-filter').value || null,
             status: document.getElementById('status-filter').value || null,
             commodity: document.getElementById('commodity-filter').value || null,
+            mode_of_transport: document.getElementById('mode-of-transport-filter')?.value || null,
             lc_number: document.getElementById('lc-number-filter').value || null,
             product_name: document.getElementById('product-name-filter').value || null,
             variety_name: document.getElementById('variety-name-filter').value || null

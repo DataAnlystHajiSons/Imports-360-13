@@ -7,7 +7,7 @@ export class FormValidator {
     const errors = [];
 
     // Validate shipment type
-    if (!formData.type || !['LC', 'DP'].includes(formData.type)) {
+    if (!formData.type || !['LC', 'DP', 'Contract', 'Collection'].includes(formData.type)) {
       errors.push('Please select a valid shipment type');
     }
 

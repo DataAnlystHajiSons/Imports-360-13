@@ -15,7 +15,9 @@ const INCOTERM_OPTIONS = {
   sea: [
     { value: 'EXW', label: 'EXW (Ex Works)' },
     { value: 'FOB', label: 'FOB (Free On Board)' },
-    { value: 'CFR', label: 'CFR (Cost and Freight)' }
+    { value: 'CFR', label: 'CFR (Cost and Freight)' },
+    { value: 'CPT', label: 'CPT (Carriage Paid To)' },
+    { value: 'FCA', label: 'FCA (Free Carrier)' }
   ],
   land: [
     { value: 'FCA', label: 'FCA (Free Carrier)' },
@@ -452,7 +454,13 @@ export class ShipmentFormManager {
     const freightCharges = this.form.querySelector('[name="freight_charges"]')?.value;
     const paymentTermId = this.form.querySelector('[name="payment_term_id"]').value;
     
-    const typeLabel = type === 'LC' ? 'LC (Letter of Credit)' : 'DP (Documents against Payment)';
+    const typeLabels = {
+      'LC': 'LC (Letter of Credit)',
+      'DP': 'DP (Documents against Payment)',
+      'Contract': 'Contract',
+      'Collection': 'Collection'
+    };
+    const typeLabel = typeLabels[type] || type;
     const modeLabel = this.getModeOfTransportLabel(modeOfTransport);
     const incoTermLabel = this.getIncotermLabel(incoTerm);
     const paymentTermLabel = this.getPaymentTermName(paymentTermId);
@@ -463,9 +471,10 @@ export class ShipmentFormManager {
     html += `<div class="review-item"><span class="review-item-label">Mode of Transport:</span><span class="review-item-value">${modeLabel}</span></div>`;
     html += `<div class="review-item"><span class="review-item-label">Inco-term:</span><span class="review-item-value">${incoTermLabel}</span></div>`;
     
-    // Show freight charges only if FOB
-    if (incoTerm === 'FOB' && freightCharges) {
-      html += `<div class="review-item"><span class="review-item-label">FOB Charges:</span><span class="review-item-value">$${parseFloat(freightCharges).toFixed(2)} USD</span></div>`;
+    // Show freight charges if FOB, CFR, or CPT
+    if (['FOB', 'CFR', 'CPT'].includes(incoTerm) && freightCharges) {
+      const chargeLabel = incoTerm === 'FOB' ? 'FOB Charges' : 'Freight Charges';
+      html += `<div class="review-item"><span class="review-item-label">${chargeLabel}:</span><span class="review-item-value">$${parseFloat(freightCharges).toFixed(2)} USD</span></div>`;
     }
     
     html += `<div class="review-item"><span class="review-item-label">Payment Term:</span><span class="review-item-value">${paymentTermLabel}</span></div>`;
