@@ -434,8 +434,8 @@
             if (currentStageIndex === -1) currentStageIndex = 0;
         }
 
-        // Auto-complete shipment if progress is 100% (final stage 'bills' is reached) and status is not yet completed
-        if (currentStageIndex === activeStageOrder.length - 1 && data.status !== 'completed') {
+        // Auto-complete shipment if progress is 100% (final stage 'bills' is reached) and status is not yet completed (and not cancelled)
+        if (currentStageIndex === activeStageOrder.length - 1 && data.status !== 'completed' && data.status !== 'cancelled') {
             await supabase.from('shipment').update({ status: 'completed' }).eq('id', shipmentId);
             data.status = 'completed'; // Update local status for instant UI sync
         }
@@ -571,7 +571,105 @@
         }
         transportElement.innerHTML = `<i class="fas ${transportIcons[modeOfTransport] || 'fa-ship'}"></i> ${transportLabels[modeOfTransport] || modeOfTransport}`;
         
-        document.querySelector('.shipment-status').textContent = data.status;
+        // Update and handle interactive status badge
+        const statusTextEl = document.getElementById('shipmentStatusText') || document.querySelector('.shipment-status');
+        const statusContainer = document.getElementById('shipmentStatusContainer') || document.querySelector('.shipment-status');
+        const rawStatus = (data.status || 'active').toLowerCase();
+        const statusDisplayNames = {
+          'active': 'Active',
+          'completed': 'Completed',
+          'cancelled': 'Cancelled',
+          'on_hold': 'On Hold'
+        };
+        const displayStatusText = statusDisplayNames[rawStatus] || rawStatus.toUpperCase();
+
+        if (statusTextEl) {
+          statusTextEl.textContent = displayStatusText;
+        }
+        if (statusContainer) {
+          statusContainer.className = `shipment-status editable-badge ${rawStatus}`;
+          
+          statusContainer.onclick = function(e) {
+            if (document.getElementById('inlineStatusSelect')) return;
+
+            const currentVal = (data.status || 'active').toLowerCase();
+            const statusOptions = [
+              { value: 'active', label: 'Active' },
+              { value: 'on_hold', label: 'On Hold' },
+              { value: 'cancelled', label: 'Cancelled' },
+              { value: 'completed', label: 'Completed' }
+            ];
+
+            const selectHtml = document.createElement('select');
+            selectHtml.id = 'inlineStatusSelect';
+            selectHtml.style.fontSize = '0.75rem';
+            selectHtml.style.fontFamily = 'inherit';
+            selectHtml.style.fontWeight = '700';
+            selectHtml.style.borderRadius = '12px';
+            selectHtml.style.padding = '2px 8px';
+            selectHtml.style.outline = 'none';
+            selectHtml.style.cursor = 'pointer';
+            selectHtml.style.border = '1px solid #cbd5e1';
+
+            statusOptions.forEach(opt => {
+              const option = document.createElement('option');
+              option.value = opt.value;
+              option.text = opt.label;
+              if (opt.value === currentVal) option.selected = true;
+              selectHtml.appendChild(option);
+            });
+
+            const originalHtml = statusContainer.innerHTML;
+            statusContainer.innerHTML = '';
+            statusContainer.appendChild(selectHtml);
+            selectHtml.focus();
+
+            const saveStatusChanges = async () => {
+              const newVal = selectHtml.value;
+              if (newVal !== currentVal) {
+                if (newVal === 'cancelled' && !confirm('Are you sure you want to mark this shipment as CANCELLED?')) {
+                  statusContainer.innerHTML = originalHtml;
+                  return;
+                }
+
+                statusContainer.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                try {
+                  const { error } = await supabase
+                    .from('shipment')
+                    .update({ status: newVal })
+                    .eq('id', shipmentId);
+
+                  if (error) throw error;
+
+                  data.status = newVal;
+                  await initializeTracker();
+                } catch (err) {
+                  console.error('Error updating status:', err);
+                  alert('Failed to update status: ' + err.message);
+                  statusContainer.innerHTML = originalHtml;
+                }
+              } else {
+                statusContainer.innerHTML = originalHtml;
+              }
+            };
+
+            selectHtml.addEventListener('change', saveStatusChanges);
+            selectHtml.addEventListener('blur', () => {
+              setTimeout(() => {
+                if (statusContainer.contains(selectHtml)) {
+                  statusContainer.innerHTML = originalHtml;
+                }
+              }, 150);
+            });
+            selectHtml.addEventListener('keydown', (ev) => {
+              if (ev.key === 'Escape') {
+                statusContainer.innerHTML = originalHtml;
+              }
+            });
+
+            e.stopPropagation();
+          };
+        }
 
         // Populate Start Date and Last Activity Date in center hub
         function formatTrackerDate(dateString) {

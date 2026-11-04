@@ -1496,7 +1496,10 @@
         </div>
         <div class="summary-item">
           <span class="label"><i class="fas fa-info-circle"></i> Status</span>
-          <span class="value">${shipmentData.status.toUpperCase()}</span>
+          <span class="value" id="detailStatusContainer" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Click to change status">
+            <span id="detailStatusText">${shipmentData.status.toUpperCase()}</span>
+            <i class="fas fa-pencil-alt" style="font-size: 0.75rem; opacity: 0.6;"></i>
+          </span>
         </div>
         <div class="summary-item">
           <span class="label"><i class="fas fa-calendar-alt"></i> Created</span>
@@ -1508,6 +1511,83 @@
         </div>
       </div>
     `;
+
+    // Attach interactive status handler
+    const detailStatusContainer = document.getElementById('detailStatusContainer');
+    if (detailStatusContainer) {
+      detailStatusContainer.onclick = function(e) {
+        if (document.getElementById('detailInlineStatusSelect')) return;
+
+        const currentVal = (shipmentData.status || 'active').toLowerCase();
+        const select = document.createElement('select');
+        select.id = 'detailInlineStatusSelect';
+        select.style.cssText = 'padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid #cbd5e1; outline: none; background: #fff;';
+
+        const options = [
+          { value: 'active', label: 'ACTIVE' },
+          { value: 'on_hold', label: 'ON HOLD' },
+          { value: 'cancelled', label: 'CANCELLED' },
+          { value: 'completed', label: 'COMPLETED' }
+        ];
+
+        options.forEach(opt => {
+          const el = document.createElement('option');
+          el.value = opt.value;
+          el.text = opt.label;
+          if (opt.value === currentVal) el.selected = true;
+          select.appendChild(el);
+        });
+
+        const originalHtml = detailStatusContainer.innerHTML;
+        detailStatusContainer.innerHTML = '';
+        detailStatusContainer.appendChild(select);
+        select.focus();
+
+        const handleStatusChange = async () => {
+          const newVal = select.value;
+          if (newVal !== currentVal) {
+            if (newVal === 'cancelled' && !confirm('Are you sure you want to mark this shipment as CANCELLED?')) {
+              detailStatusContainer.innerHTML = originalHtml;
+              return;
+            }
+
+            detailStatusContainer.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            try {
+              const { error } = await supabase
+                .from('shipment')
+                .update({ status: newVal })
+                .eq('id', shipmentId);
+
+              if (error) throw error;
+
+              shipmentData.status = newVal;
+              detailStatusContainer.innerHTML = `<span id="detailStatusText">${newVal.toUpperCase()}</span><i class="fas fa-pencil-alt" style="font-size: 0.75rem; opacity: 0.6;"></i>`;
+            } catch (err) {
+              console.error('Failed to update status:', err);
+              alert('Error updating status: ' + err.message);
+              detailStatusContainer.innerHTML = originalHtml;
+            }
+          } else {
+            detailStatusContainer.innerHTML = originalHtml;
+          }
+        };
+
+        select.addEventListener('change', handleStatusChange);
+        select.addEventListener('blur', () => {
+          setTimeout(() => {
+            if (detailStatusContainer.contains(select)) {
+              detailStatusContainer.innerHTML = originalHtml;
+            }
+          }, 150);
+        });
+        select.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Escape') {
+            detailStatusContainer.innerHTML = originalHtml;
+          }
+        });
+        e.stopPropagation();
+      };
+    }
 
     // Render contextual alert banner if arriving via alert/focus link
     const focusParam = urlParams.get("focus");

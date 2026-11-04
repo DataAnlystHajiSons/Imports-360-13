@@ -76,7 +76,7 @@ function getStagebadge(stage) {
   </div>`;
 }
 
-function getStatusBadge(status) {
+function getStatusBadge(status, shipmentId) {
   const statusConfig = {
     'active': { label: 'Active', color: '#10B981', icon: 'fa-play-circle' },
     'completed': { label: 'Completed', color: '#6366F1', icon: 'fa-check-circle' },
@@ -87,11 +87,102 @@ function getStatusBadge(status) {
 
   const config = statusConfig[status] || { label: toProperCase(status), color: '#64748B', icon: 'fa-circle' };
   
+  if (shipmentId) {
+    return `<div class="status-badge ${status} status-clickable" onclick="window.handleStatusClick(event, '${shipmentId}', '${status}')" style="background-color: ${config.color}15; border-color: ${config.color}; color: ${config.color}; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Click to change status">
+      <i class="fas ${config.icon}"></i>
+      <span>${config.label}</span>
+      <i class="fas fa-pencil-alt" style="font-size: 8px; opacity: 0.6; margin-left: 2px;"></i>
+    </div>`;
+  }
+
   return `<div class="status-badge ${status}" style="background-color: ${config.color}15; border-color: ${config.color}; color: ${config.color}">
     <i class="fas ${config.icon}"></i>
     <span>${config.label}</span>
   </div>`;
 }
+
+window.handleStatusClick = function(event, shipmentId, currentStatus) {
+  event.stopPropagation();
+  event.preventDefault();
+  const badge = event.currentTarget;
+  if (badge.querySelector('select')) return;
+
+  const select = document.createElement('select');
+  select.className = 'status-inline-select';
+  select.style.cssText = 'padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid #cbd5e1; outline: none; background: #fff; color: #1e293b;';
+  
+  const options = [
+    { value: 'active', label: 'Active' },
+    { value: 'on_hold', label: 'On Hold' },
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'completed', label: 'Completed' }
+  ];
+
+  options.forEach(opt => {
+    const el = document.createElement('option');
+    el.value = opt.value;
+    el.text = opt.label;
+    if (opt.value === currentStatus) el.selected = true;
+    select.appendChild(el);
+  });
+
+  const originalHtml = badge.innerHTML;
+  const originalStyle = badge.getAttribute('style');
+  badge.innerHTML = '';
+  badge.appendChild(select);
+  select.focus();
+
+  const handleStatusChange = async () => {
+    const newStatus = select.value;
+    if (newStatus !== currentStatus) {
+      if (newStatus === 'cancelled' && !confirm('Are you sure you want to mark this shipment as CANCELLED?')) {
+        badge.innerHTML = originalHtml;
+        badge.setAttribute('style', originalStyle);
+        return;
+      }
+
+      badge.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+      try {
+        const { error } = await supabase
+          .from('shipment')
+          .update({ status: newStatus })
+          .eq('id', shipmentId);
+
+        if (error) throw error;
+
+        const row = badge.closest('.enhanced-row');
+        if (row) row.dataset.status = newStatus;
+
+        badge.outerHTML = getStatusBadge(newStatus, shipmentId);
+        showNotification(`Shipment status updated to ${newStatus.toUpperCase()}`, 'success');
+      } catch (err) {
+        console.error('Failed to update status:', err);
+        alert('Error updating status: ' + err.message);
+        badge.innerHTML = originalHtml;
+        badge.setAttribute('style', originalStyle);
+      }
+    } else {
+      badge.innerHTML = originalHtml;
+      badge.setAttribute('style', originalStyle);
+    }
+  };
+
+  select.addEventListener('change', handleStatusChange);
+  select.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (badge.contains(select)) {
+        badge.innerHTML = originalHtml;
+        badge.setAttribute('style', originalStyle);
+      }
+    }, 150);
+  });
+  select.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      badge.innerHTML = originalHtml;
+      badge.setAttribute('style', originalStyle);
+    }
+  });
+};
 
 /**
  * Calculates a case-insensitive search relevance score for a shipment against a search query.
@@ -335,7 +426,7 @@ async function loadShipments(searchTerm = '', filters = {}) {
 
     // Generate stage badge
     const stageBadge = getStagebadge(s.latest_activity_stage || s.current_stage);
-    const statusBadge = getStatusBadge(s.status);
+    const statusBadge = getStatusBadge(s.status, s.id);
     const lcDisplay = s.lc_number ? `<span class="lc-number">${s.lc_number}</span>` : `<span class="lc-pending">Not assigned</span>`;
     
     const STAGE_ORDER = [
@@ -351,8 +442,8 @@ async function loadShipments(searchTerm = '', filters = {}) {
     const completedCount = s.completed_milestones_count || 0;
     const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
     
-    // Auto-complete shipment if progress is 100% and status is not yet completed
-    if (progressPercent === 100 && s.status !== 'completed') {
+    // Auto-complete shipment if progress is 100% and status is not yet completed (and not cancelled)
+    if (progressPercent === 100 && s.status !== 'completed' && s.status !== 'cancelled') {
         supabase.from('shipment')
             .update({ status: 'completed' })
             .eq('id', s.id)

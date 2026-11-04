@@ -6,7 +6,7 @@
   <title>Advanced Shipment Tracker</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="css/shipment-tracker.css?v=2.1">
+  <link rel="stylesheet" href="css/shipment-tracker.css?v=2.2">
   <link rel="stylesheet" href="css/stage-target-dates.css">
   <!-- Select2 for searchable dropdowns -->
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -29,7 +29,12 @@
           <div class="center-hub">
             <div class="shipment-id">#SP-2025-001</div>
             <div class="shipment-product">Premium Cauliflower</div>
-            <div class="shipment-status">In Transit</div>
+            <div class="shipment-status-container">
+              <span class="shipment-status editable-badge" id="shipmentStatusContainer" title="Click to change Status">
+                <span id="shipmentStatusText">ACTIVE</span>
+                <i class="fas fa-pencil-alt edit-icon"></i>
+              </span>
+            </div>
             <div class="shipment-incoterm-display" id="incotermDisplay">
               <i class="fas fa-shipping-fast"></i>
               <span id="modeOfTransport">Sea</span> • 
@@ -1286,7 +1291,7 @@
       });
   </script>
 
-  <script type="module" src="js/shipment-tracker.js?v=3.2"></script>
+  <script type="module" src="js/shipment-tracker.js?v=3.3"></script>
   <script src="js/supplier-helpers.js"></script>
 </body>
 </html>

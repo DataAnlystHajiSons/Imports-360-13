@@ -185,15 +185,50 @@ body {
 }
 
 .shipment-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.75rem;
   font-weight: 700;
-  padding: 2px 10px;
+  padding: 3px 12px;
   border-radius: 20px;
   background: rgba(124, 58, 237, 0.1);
   color: #7C3AED;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.shipment-status:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.shipment-status.active {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.shipment-status.completed {
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366F1;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.shipment-status.cancelled {
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.shipment-status.on_hold {
+  background: rgba(245, 158, 11, 0.12);
+  color: #F59E0B;
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .shipment-incoterm-display {
