@@ -91,7 +91,7 @@ module.exports = {
                 { name: "origin", type: "text", label: "Origin" },
                 { name: "transport", type: "select", label: "Transport Mode", options: ["air", "sea", "road", "rail"] },
                 { name: "inco_terms", type: "select", label: "Incoterms", options: [], dynamicOptions: true },
-                { name: "container_type", type: "select", label: "Container Type", options: ["carton", "pallet"] },
+                { name: "container_type", type: "select", label: "Container Type", options: ["Cartons", "Bags", "Palettes"] },
                 { name: "cartons_count", type: "number", label: "Cartons Count" },
                 { name: "gross_weight", type: "number", label: "Gross Weight (kg)" },
                 { name: "net_weight", type: "number", label: "Net Weight (kg)" },

@@ -140,7 +140,7 @@
                 { name: "origin", type: "text", label: "Origin" },
                 { name: "transport", type: "select", label: "Transport Mode", options: ["air", "sea", "road", "rail"] },
                 { name: "inco_terms", type: "select", label: "Incoterms", options: [], dynamicOptions: true },
-                { name: "container_type", type: "select", label: "Container Type", options: ["carton", "pallet"] },
+                { name: "container_type", type: "select", label: "Container Type", options: ["Cartons", "Bags", "Palettes"] },
                 { name: "cartons_count", type: "number", label: "Cartons Count" },
                 { name: "gross_weight", type: "number", label: "Gross Weight (kg)" },
                 { name: "net_weight", type: "number", label: "Net Weight (kg)" },
@@ -415,6 +415,8 @@
             ?.map(sp => sp.product_variety?.commodity?.name)
             .filter(name => name) || [];
         window.currentShipmentCommodities = commodities;
+        window.currentShipmentModeOfTransport = (data.mode_of_transport || 'sea').toLowerCase();
+        window.isAirShipment = window.currentShipmentModeOfTransport.includes('air');
         const disabledCommodities = [
             "solar", 
             "grain pro", 
@@ -883,6 +885,7 @@
                         field.name === 'amendment_da_amount' ||
                         field.name === 'amendment_da_date' ||
                         (hasDisabledCommodity && field.name === 'frsd_application_date') ||
+                        (!window.isAirShipment && (field.name === 'shipping_guarantee_applied_date' || field.name === 'shipping_guarantee_received_date' || field.name === 'shipping_guarantee')) ||
                         field.name.includes('url')
                     ) return;
                     totalFields++;
@@ -1310,6 +1313,7 @@
                         field.name === 'amendment_da_amount' ||
                         field.name === 'amendment_da_date' ||
                         (hasDisabledCommodity && field.name === 'frsd_application_date') ||
+                        (!window.isAirShipment && (field.name === 'shipping_guarantee_applied_date' || field.name === 'shipping_guarantee_received_date' || field.name === 'shipping_guarantee')) ||
                         field.name.includes('url')
                     ) return;
                     
@@ -1671,6 +1675,10 @@
                     }
                 }
 
+                if (!window.isAirShipment && (field.name === 'shipping_guarantee_applied_date' || field.name === 'shipping_guarantee_received_date') && (!value || value === 'null' || displayValue === 'N/A')) {
+                    displayValue = '<span style="color: #94a3b8; font-style: italic;">Not required (Air only)</span>';
+                }
+
                 const row = table.insertRow();
                 row.innerHTML = `<td>${field.label}</td><td>${displayValue || 'N/A'}</td>`;
             }
@@ -1765,11 +1773,28 @@
                 
                 const formField = document.createElement('div');
                 formField.classList.add('form-field');
-                let fieldHtml = `<label for="${field.name}">${field.label}:</label>`;
+                
+                const isShippingGuarantee = field.name === 'shipping_guarantee_applied_date' || field.name === 'shipping_guarantee_received_date';
+                let labelExtra = '';
+                if (isShippingGuarantee) {
+                    if (window.isAirShipment) {
+                        labelExtra = ' <span style="font-size: 11px; color: #ef4444; font-weight: 500;">(Required for Air)</span>';
+                    } else {
+                        labelExtra = ' <span style="font-size: 11px; color: var(--text-secondary-color, #94a3b8); font-weight: normal;">(Optional - Air Only)</span>';
+                    }
+                }
+                
+                let fieldHtml = `<label for="${field.name}">${field.label}${labelExtra}:</label>`;
                 if (field.type === 'select') {
                     fieldHtml += `<select id="${field.name}" name="${field.name}">`;
                     field.options.forEach(option => {
-                        fieldHtml += `<option value="${option}" ${value === option ? 'selected' : ''}>${option}</option>`;
+                        const isSelected = value && (
+                            value.toString().toLowerCase() === option.toLowerCase() ||
+                            (option === 'Cartons' && value.toString().toLowerCase() === 'carton') ||
+                            (option === 'Palettes' && (value.toString().toLowerCase() === 'pallet' || value.toString().toLowerCase() === 'pallets')) ||
+                            (option === 'Bags' && value.toString().toLowerCase() === 'bag')
+                        );
+                        fieldHtml += `<option value="${option}" ${isSelected ? 'selected' : ''}>${option}</option>`;
                     });
                     fieldHtml += `</select>`;
                 } else if (field.fk) {
