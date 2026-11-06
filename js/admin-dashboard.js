@@ -298,6 +298,60 @@ window.handleStatusClick = function(event, shipmentId, currentStatus) {
 };
 
 /**
+ * Returns a styled badge for the shipment mode of transport (Air, Sea, Land, etc.)
+ */
+function getModeBadge(mode) {
+  if (!mode) {
+    return `<span class="mode-badge not-assigned" style="color: var(--text-secondary-color, #94a3b8); font-size: 13px;">—</span>`;
+  }
+  const normalized = mode.toString().trim().toLowerCase();
+  let label = mode;
+  let icon = 'fa-shipping-fast';
+  let bg = '#f1f5f9';
+  let color = '#475569';
+  let borderColor = '#cbd5e1';
+
+  if (normalized.includes('air')) {
+    label = 'Air';
+    icon = 'fa-plane';
+    bg = '#eff6ff';
+    color = '#2563eb';
+    borderColor = '#bfdbfe';
+  } else if (normalized.includes('sea')) {
+    label = 'Sea';
+    icon = 'fa-ship';
+    bg = '#ecfeff';
+    color = '#0891b2';
+    borderColor = '#a5f3fc';
+  } else if (normalized.includes('land') || normalized.includes('road')) {
+    label = 'Land';
+    icon = 'fa-truck';
+    bg = '#fef3c7';
+    color = '#b45309';
+    borderColor = '#fde68a';
+  } else if (normalized.includes('rail')) {
+    label = 'Rail';
+    icon = 'fa-train';
+    bg = '#f3e8ff';
+    color = '#7e22ce';
+    borderColor = '#e9d5ff';
+  } else if (normalized.includes('multi')) {
+    label = 'Multimodal';
+    icon = 'fa-random';
+    bg = '#fdf2f8';
+    color = '#be185d';
+    borderColor = '#fbcfe8';
+  } else {
+    label = mode.charAt(0).toUpperCase() + mode.slice(1);
+  }
+
+  return `<span class="mode-badge" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: ${bg}; color: ${color}; border: 1px solid ${borderColor}; white-space: nowrap;">
+    <i class="fas ${icon}"></i>
+    <span>${label}</span>
+  </span>`;
+}
+
+/**
  * Calculates a case-insensitive search relevance score for a shipment against a search query.
  * Higher scores indicate higher relevance and priority in search results.
  */
@@ -426,7 +480,7 @@ async function loadShipments(searchTerm = '', filters = {}) {
   if (error) {
     document.getElementById("shipments-table-body").innerHTML = `
       <tr class="error-row">
-        <td colspan="8" style="text-align: center; padding: 40px; color: var(--error-color);">
+        <td colspan="10" style="text-align: center; padding: 40px; color: var(--error-color);">
           <div class="error-content">
             <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
             <strong>Error loading shipments</strong><br>
@@ -441,7 +495,7 @@ async function loadShipments(searchTerm = '', filters = {}) {
   if (!data || data.length === 0) {
     tableBody.innerHTML = `
       <tr class="empty-row">
-        <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-secondary-color);">
+        <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-secondary-color);">
           <div class="empty-content">
             <i class="fas fa-ship" style="font-size: 32px; margin-bottom: 15px; display: block; opacity: 0.5;"></i>
             <strong style="display: block; margin-bottom: 5px;">No shipments found</strong>
@@ -525,7 +579,7 @@ async function loadShipments(searchTerm = '', filters = {}) {
                 <span class="supplier-name">${p.supplier.name}</span>
               </div>
             </td>
-            <td colspan="4" class="sub-empty-cells">
+            <td colspan="6" class="sub-empty-cells">
               <div class="cell-content">
                 <span class="sub-product-indicator">Additional Product</span>
               </div>
@@ -601,6 +655,11 @@ async function loadShipments(searchTerm = '', filters = {}) {
         <div class="cell-content">
           <i class="fas fa-building supplier-icon"></i>
           <span class="supplier-name">${supplierName}</span>
+        </div>
+      </td>
+      <td class="mode-cell">
+        <div class="cell-content">
+          ${getModeBadge(s.mode_of_transport)}
         </div>
       </td>
       <td class="stage-cell">
@@ -1595,6 +1654,10 @@ window.onload = async () => {
           case 'supplier':
             aValue = a.querySelector('.supplier-name').textContent.trim();
             bValue = b.querySelector('.supplier-name').textContent.trim();
+            break;
+          case 'mode':
+            aValue = a.querySelector('.mode-cell .cell-content')?.textContent.trim() || '';
+            bValue = b.querySelector('.mode-cell .cell-content')?.textContent.trim() || '';
             break;
           case 'stage':
             aValue = a.querySelector('.stage-badge span').textContent.trim();

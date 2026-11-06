@@ -415,7 +415,18 @@
             ?.map(sp => sp.product_variety?.commodity?.name)
             .filter(name => name) || [];
         window.currentShipmentCommodities = commodities;
-        const disabledCommodities = ["solar", "grain pro", "peat moss", "hermetic grainpro cocoon indoor 150 cbm", "hermetic cocoon indoor 150 cbm", "equipment", "dripper"];
+        const disabledCommodities = [
+            "solar", 
+            "grain pro", 
+            "peatmoss", 
+            "peat moss", 
+            "equipment's", 
+            "equipment", 
+            "drip", 
+            "dripper", 
+            "hermetic grainpro cocoon indoor 150 cbm", 
+            "hermetic cocoon indoor 150 cbm"
+        ];
         const hasDisabledCommodity = commodities.some(c => disabledCommodities.includes(c.toLowerCase()));
         
         if (hasDisabledCommodity) {
@@ -5004,8 +5015,12 @@ Direct Data Count: ${directData?.length || 0}`);
             // Render checklist
             list.innerHTML = '';
             data.forEach(doc => {
+                // If doc is generic release_order and we have specific options, avoid adding generic to dynamicGroup
+                const isGenericReleaseOrder = doc.doc_type === 'release_order' && 
+                    (existingOptions.includes('release_order_fsrd') || existingOptions.includes('release_order_dpp'));
+
                 // Dynamically add to dropdown if missing
-                if (dynamicGroup && !existingOptions.includes(doc.doc_type)) {
+                if (dynamicGroup && !existingOptions.includes(doc.doc_type) && !isGenericReleaseOrder) {
                     if (!dynamicGroup.querySelector(`option[value="${doc.doc_type}"]`)) {
                         const option = document.createElement('option');
                         option.value = doc.doc_type;
@@ -5117,7 +5132,12 @@ Direct Data Count: ${directData?.length || 0}`);
             const fileName = doc.file_url.split('/').pop();
             
             // Format document type
-            const docType = doc.doc_type.split('_').map(word => 
+            const docTypeTitles = {
+                'release_order_fsrd': 'Release Order (FSRD)',
+                'release_order_dpp': 'Release Order (DPP)',
+                'release_order': 'Release Order'
+            };
+            const docType = docTypeTitles[doc.doc_type] || doc.doc_type.split('_').map(word => 
                 word.charAt(0).toUpperCase() + word.slice(1)
             ).join(' ');
             

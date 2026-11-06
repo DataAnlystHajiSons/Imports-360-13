@@ -131,6 +131,8 @@ function getCategoryFromType(docType) {
     'ip_number': 'customs',
     'customs_declaration': 'customs',
     'release_order': 'customs',
+    'release_order_fsrd': 'customs',
+    'release_order_dpp': 'customs',
     'enlistment_verification': 'customs',
     'quality_certificate': 'other',
     'phytosanitary_certificate': 'other',

@@ -39,28 +39,62 @@ END;
 ****filter_shipments****
 
 
-BEGIN
-  RETURN QUERY
-  SELECT *
-  FROM v_shipments_with_all_details s
-  WHERE
-    (p_search_term IS NULL OR s.reference_code ILIKE '%' || p_search_term || '%' OR s.product_name ILIKE '%' || p_search_term || '%' OR s.variety_name ILIKE '%' || p_search_term || '%' OR s.supplier_name ILIKE '%' || p_search_term || '%') AND
-    (p_supplier_id IS NULL OR s.supplier_id = p_supplier_id) AND
-    (p_clearing_agent_id IS NULL OR s.clearing_agent_id = p_clearing_agent_id) AND
-    (p_bank_id IS NULL OR s.bank_id = p_bank_id) AND
-    (p_status IS NULL OR s.status = p_status::status) AND
-    (p_commodity IS NULL OR s.commodity = p_commodity) AND
-    (p_lc_number IS NULL OR s.lc_number ILIKE '%' || p_lc_number || '%') AND
-    (p_product_name IS NULL OR s.product_name ILIKE '%' || p_product_name || '%' OR EXISTS (
-      SELECT 1
-      FROM jsonb_to_recordset(s.product_variety) AS x(product_name TEXT)
-      WHERE x.product_name ILIKE '%' || p_product_name || '%'
+BEGIN 
+  RETURN QUERY 
+  SELECT * FROM public.v_shipments_with_all_details s 
+  WHERE 
+    (p_search_term IS NULL OR TRIM(p_search_term) = '' OR 
+     s.reference_code ILIKE '%' || TRIM(p_search_term) || '%' OR 
+     EXISTS (
+       SELECT 1 
+       FROM jsonb_to_recordset(s.product_variety) AS x(product_name TEXT, variety_name TEXT, supplier JSONB)
+       WHERE x.product_name ILIKE '%' || TRIM(p_search_term) || '%' OR x.variety_name ILIKE '%' || TRIM(p_search_term) || '%' OR (x.supplier->>'name') ILIKE '%' || TRIM(p_search_term) || '%'
+     )
+    ) AND
+    (p_supplier_id IS NULL OR p_supplier_id = '' OR EXISTS (
+       SELECT 1 
+       FROM jsonb_to_recordset(s.product_variety) AS x(supplier_id TEXT)
+       WHERE x.supplier_id = p_supplier_id
     )) AND
-    (p_variety_name IS NULL OR s.variety_name ILIKE '%' || p_variety_name || '%' OR EXISTS (
-      SELECT 1
-      FROM jsonb_to_recordset(s.product_variety) AS x(variety_name TEXT)
-      WHERE x.variety_name ILIKE '%' || p_variety_name || '%'
-    ));
+    (p_clearing_agent_id IS NULL OR p_clearing_agent_id = '' OR s.clearing_agent_id::text = p_clearing_agent_id) AND
+    (p_bank_id IS NULL OR p_bank_id = '' OR s.bank_id::text = p_bank_id) AND
+    (p_status IS NULL OR p_status = '' OR s.status::text = p_status) AND
+    (p_shipment_type IS NULL OR p_shipment_type = '' OR s.type::text = p_shipment_type) AND
+    (p_commodity IS NULL OR p_commodity = '' OR EXISTS (
+       SELECT 1 
+       FROM jsonb_to_recordset(s.product_variety) AS x(commodity_name TEXT)
+       WHERE x.commodity_name = p_commodity
+    )) AND
+    (p_lc_number IS NULL OR p_lc_number = '' OR s.lc_number ILIKE '%' || p_lc_number || '%') AND
+    (p_product_name IS NULL OR p_product_name = '' OR EXISTS (
+       SELECT 1 
+       FROM jsonb_to_recordset(s.product_variety) AS x(product_name TEXT)
+       WHERE x.product_name ILIKE '%' || p_product_name || '%'
+    )) AND
+    (p_variety_name IS NULL OR p_variety_name = '' OR EXISTS (
+       SELECT 1 
+       FROM jsonb_to_recordset(s.product_variety) AS x(variety_name TEXT)
+       WHERE x.variety_name ILIKE '%' || p_variety_name || '%'
+    )) AND
+    (p_mode_of_transport IS NULL OR p_mode_of_transport = '' OR s.mode_of_transport::text = p_mode_of_transport)
+  ORDER BY 
+    CASE 
+      WHEN p_search_term IS NULL OR TRIM(p_search_term) = '' THEN 100
+      -- 1. Exact match on reference code (case-insensitive)
+      WHEN LOWER(s.reference_code) = LOWER(TRIM(p_search_term)) THEN 1
+      -- 2. Exact match on product name (case-insensitive)
+      WHEN LOWER(s.product_name) = LOWER(TRIM(p_search_term)) THEN 2
+      -- 3. Reference code starts with search term (case-insensitive)
+      WHEN LOWER(s.reference_code) LIKE LOWER(TRIM(p_search_term)) || '%' THEN 3
+      -- 4. Product name starts with search term (case-insensitive)
+      WHEN LOWER(s.product_name) LIKE LOWER(TRIM(p_search_term)) || '%' THEN 4
+      -- 5. Reference code contains search term
+      WHEN LOWER(s.reference_code) LIKE '%' || LOWER(TRIM(p_search_term)) || '%' THEN 5
+      -- 6. Product name contains search term
+      WHEN LOWER(s.product_name) LIKE '%' || LOWER(TRIM(p_search_term)) || '%' THEN 6
+      ELSE 7
+    END ASC,
+    s.created_at DESC;
 END;
 
 
@@ -359,13 +393,30 @@ END;
 
 DECLARE
   shipment_rec record;
-  has_seed_commodity BOOLEAN := FALSE;
+  has_disabled_commodity boolean := FALSE;
+  has_seed_commodity boolean := FALSE;
   seed_commodity_id uuid;
+  current_payment_term text;
 BEGIN
   -- Get the shipment record
   SELECT * INTO shipment_rec
   FROM public.shipment
   WHERE id = p_shipment_id;
+
+  SELECT pt.name INTO current_payment_term
+  FROM public.shipment s
+  LEFT JOIN public.payment_terms pt ON s.payment_term_id = pt.id
+  WHERE s.id = p_shipment_id;
+
+  -- Check if shipment has ANY products from disabled non-seed commodities
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.shipment_products sp
+    JOIN public.product_variety pv ON sp.product_variety_id = pv.id
+    JOIN public.commodity c ON pv.commodity_id = c.id
+    WHERE sp.shipment_id = p_shipment_id
+    AND LOWER(c.name) IN ('solar', 'grain pro', 'peatmoss', 'peat moss', 'equipment''s', 'equipment', 'drip', 'dripper', 'hermetic grainpro cocoon indoor 150 cbm', 'hermetic cocoon indoor 150 cbm')
+  ) INTO has_disabled_commodity;
 
   -- Check if shipment has any products from "Seed" commodity
   SELECT c.id INTO seed_commodity_id
@@ -385,26 +436,20 @@ BEGIN
 
   CASE p_to_stage
     WHEN 'enlistment_verification' THEN
-      -- If no seed commodity, auto-advance. If has seed commodity, check forecast requirement
-      IF NOT has_seed_commodity THEN
-        RETURN TRUE; -- No seed commodity, skip forecast stage
-      ELSE
-        -- Check if seed commodity product is in forecast for current year
-        RETURN EXISTS (
-          SELECT 1 
-          FROM public.shipment_products sp
-          JOIN public.product_variety pv ON sp.product_variety_id = pv.id
-          JOIN public.forecast f ON f.product_variety_id = pv.id
-          WHERE sp.shipment_id = p_shipment_id 
-          AND pv.commodity_id = seed_commodity_id
-          AND f.year = EXTRACT(YEAR FROM CURRENT_DATE)
-        );
-      END IF;
+      IF has_disabled_commodity THEN RETURN TRUE; END IF;
+      IF NOT has_seed_commodity THEN RETURN TRUE; END IF;
+      RETURN EXISTS (
+        SELECT 1 
+        FROM public.shipment_products sp
+        JOIN public.product_variety pv ON sp.product_variety_id = pv.id
+        JOIN public.forecast f ON f.product_variety_id = pv.id
+        WHERE sp.shipment_id = p_shipment_id 
+        AND pv.commodity_id = seed_commodity_id
+        AND f.year = EXTRACT(YEAR FROM CURRENT_DATE)
+      );
     WHEN 'availability_confirmation' THEN
-      -- If no seed commodity, auto-advance. If has seed commodity, check enlistment status
-      IF NOT has_seed_commodity THEN
-        RETURN TRUE; -- No seed commodity, skip enlistment verification stage
-      ELSE
+      IF has_disabled_commodity THEN RETURN TRUE; END IF;
+      IF NOT has_seed_commodity THEN RETURN TRUE; END IF;
         -- Check if enlistment status is true for seed commodity product
         RETURN EXISTS (
           SELECT 1 
@@ -500,16 +545,25 @@ BEGIN
         WHERE dtca.shipment_id = p_shipment_id AND dtca.slip_picture_url IS NOT NULL
       );
     WHEN 'release_orders' THEN
-      -- Advance only when the boolean field is true
+      IF has_disabled_commodity THEN RETURN TRUE; END IF;
       RETURN EXISTS (
         SELECT 1 FROM public.under_clearing_agent uca
         WHERE uca.shipment_id = p_shipment_id AND uca.is_received = TRUE
       );
     WHEN 'gate_out' THEN
-      RETURN EXISTS (
-        SELECT 1 FROM public.release_orders ro
-        WHERE ro.shipment_id = p_shipment_id
-      );
+      IF has_disabled_commodity THEN
+        RETURN EXISTS (
+          SELECT 1 FROM public.under_clearing_agent uca
+          WHERE uca.shipment_id = p_shipment_id AND uca.is_received = TRUE
+        );
+      ELSE
+        RETURN EXISTS (
+          SELECT 1 FROM public.release_orders ro
+          WHERE ro.shipment_id = p_shipment_id 
+          AND ro.dpp_ro_number IS NOT NULL AND ro.dpp_ro_number <> ''
+          AND ro.fscrd_ro_number IS NOT NULL AND ro.fscrd_ro_number <> ''
+        );
+      END IF;
     WHEN 'transportation' THEN
       -- Advance only when the boolean field is true
       RETURN EXISTS (

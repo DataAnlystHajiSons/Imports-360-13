@@ -1120,11 +1120,32 @@
     loadPageData();
 
     document.getElementById('shipment-search').addEventListener('input', (e) => {
-      const searchTerm = e.target.value.toLowerCase();
+      const searchTerm = e.target.value.trim().toLowerCase();
       const filteredShipments = allShipments.filter(s => 
         s.reference_code.toLowerCase().includes(searchTerm) || 
         (s.product_name && s.product_name.toLowerCase().includes(searchTerm))
       );
+      if (searchTerm) {
+        filteredShipments.sort((a, b) => {
+          const refA = (a.reference_code || '').toLowerCase();
+          const refB = (b.reference_code || '').toLowerCase();
+          const prodA = (a.product_name || '').toLowerCase();
+          const prodB = (b.product_name || '').toLowerCase();
+          
+          const getScore = (ref, prod) => {
+            if (ref === searchTerm) return 1000;
+            if (prod === searchTerm) return 900;
+            if (ref.startsWith(searchTerm)) return 800 - Math.min(ref.length - searchTerm.length, 100);
+            if (prod.startsWith(searchTerm)) return 700 - Math.min(prod.length - searchTerm.length, 100);
+            if (ref.includes(searchTerm)) return 500;
+            if (prod.includes(searchTerm)) return 400;
+            return 100;
+          };
+          const scoreDiff = getScore(refB, prodB) - getScore(refA, prodA);
+          if (scoreDiff !== 0) return scoreDiff;
+          return refA.localeCompare(refB, undefined, { numeric: true });
+        });
+      }
       renderShipments(filteredShipments);
     });
 
