@@ -105,6 +105,30 @@ function getStatusBadge(status, shipmentId, cancellationReason) {
   </div>`;
 }
 
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.innerHTML = `
+    <div class="notification-content">
+      <i class="fas ${type === 'info' ? 'fa-info-circle' : 'fa-check-circle'}"></i>
+      <span>${message}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Animate in
+  setTimeout(() => notification.classList.add('show'), 100);
+  
+  // Auto remove after 3 seconds
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+window.showNotification = showNotification;
+
 function requestCancellationReasonModal() {
   return new Promise((resolve) => {
     let modal = document.getElementById('cancellation-reason-modal');
