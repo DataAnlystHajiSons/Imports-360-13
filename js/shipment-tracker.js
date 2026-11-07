@@ -447,10 +447,24 @@
             if (currentStageIndex === -1) currentStageIndex = 0;
         }
 
-        // Auto-complete shipment if progress is 100% (final stage 'bills' is reached) and status is not yet completed (and not cancelled)
-        if (currentStageIndex === activeStageOrder.length - 1 && data.status !== 'completed' && data.status !== 'cancelled') {
-            await supabase.from('shipment').update({ status: 'completed' }).eq('id', shipmentId);
-            data.status = 'completed'; // Update local status for instant UI sync
+        // Auto-status logic:
+        // 1. If final stage 'bills' is reached:
+        //    - If Bills/costing is finished -> 'completed'
+        //    - If all stages prior to bills are completed but bills not finished -> 'pending'
+        const billsIndex = activeStageOrder.indexOf('bills');
+        const costingData = stageDataMap ? stageDataMap['costing'] : null;
+        const isBillsCostingDone = costingData && costingData.final_payment && (parseFloat(costingData.per_unit_rate) > 0 || costingData.total_cost);
+
+        if (data.status !== 'cancelled' && data.status !== 'on_hold') {
+            if (currentStageIndex === billsIndex || currentStageIndex === activeStageOrder.length - 1) {
+                if (isBillsCostingDone && data.status !== 'completed') {
+                    await supabase.from('shipment').update({ status: 'completed' }).eq('id', shipmentId);
+                    data.status = 'completed'; // Update local status for instant UI sync
+                } else if (!isBillsCostingDone && data.status !== 'pending') {
+                    await supabase.from('shipment').update({ status: 'pending' }).eq('id', shipmentId);
+                    data.status = 'pending'; // Update local status for instant UI sync
+                }
+            }
         }
 
         // Update center hub
@@ -590,6 +604,7 @@
         const rawStatus = (data.status || 'active').toLowerCase();
         const statusDisplayNames = {
           'active': 'Active',
+          'pending': 'Pending',
           'completed': 'Completed',
           'cancelled': 'Cancelled',
           'on_hold': 'On Hold'
@@ -716,6 +731,7 @@
             const currentVal = (data.status || 'active').toLowerCase();
             const statusOptions = [
               { value: 'active', label: 'Active' },
+              { value: 'pending', label: 'Pending' },
               { value: 'on_hold', label: 'On Hold' },
               { value: 'cancelled', label: 'Cancelled' },
               { value: 'completed', label: 'Completed' }

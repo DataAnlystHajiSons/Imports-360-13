@@ -46,7 +46,7 @@ export class ProductRow {
           </div>
         </div>
         <div class="form-field">
-          <label>Product Variety: <span class="required">*</span></label>
+          <label>Product or Variety: <span class="required">*</span></label>
           <select name="product_variety_id" required disabled>
             <option value="">Select a commodity first</option>
           </select>

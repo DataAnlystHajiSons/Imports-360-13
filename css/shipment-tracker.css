@@ -231,6 +231,12 @@ body {
   border-color: rgba(245, 158, 11, 0.3);
 }
 
+.shipment-status.pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #D97706;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
 .shipment-incoterm-display {
   display: flex;
   align-items: center;

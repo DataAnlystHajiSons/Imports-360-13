@@ -79,10 +79,10 @@ function getStagebadge(stage) {
 function getStatusBadge(status, shipmentId, cancellationReason) {
   const statusConfig = {
     'active': { label: 'Active', color: '#10B981', icon: 'fa-play-circle' },
+    'pending': { label: 'Pending', color: '#F59E0B', icon: 'fa-hourglass-half' },
     'completed': { label: 'Completed', color: '#6366F1', icon: 'fa-check-circle' },
     'cancelled': { label: 'Cancelled', color: '#EF4444', icon: 'fa-times-circle' },
-    'on_hold': { label: 'On Hold', color: '#F59E0B', icon: 'fa-pause-circle' },
-    'pending': { label: 'Pending', color: '#64748B', icon: 'fa-clock' }
+    'on_hold': { label: 'On Hold', color: '#64748B', icon: 'fa-pause-circle' }
   };
 
   const config = statusConfig[status] || { label: toProperCase(status), color: '#64748B', icon: 'fa-circle' };
@@ -203,6 +203,7 @@ window.handleStatusClick = function(event, shipmentId, currentStatus) {
   
   const options = [
     { value: 'active', label: 'Active' },
+    { value: 'pending', label: 'Pending' },
     { value: 'on_hold', label: 'On Hold' },
     { value: 'cancelled', label: 'Cancelled' },
     { value: 'completed', label: 'Completed' }
@@ -548,14 +549,18 @@ async function loadShipments(searchTerm = '', filters = {}) {
     let varietyCellHtml = 'N/A';
     let subRowsHtml = '';
 
+    const itemCount = (products && products.length > 0) ? products.length : (s.product_name ? 1 : 0);
+
     if (products && products.length > 0) {
       const firstProduct = products[0];
       productCellHtml = `${firstProduct.product_name}`;
       varietyCellHtml = `${firstProduct.variety_name}`;
 
+      if (itemCount > 0) {
+        productCellHtml += ` <span class="product-badge" title="${itemCount} item${itemCount > 1 ? 's' : ''}">${itemCount}</span>`;
+      }
+
       if (products.length > 1) {
-        productCellHtml += ` <span class="product-badge">+${products.length - 1}</span>`;
-        
         products.slice(1).forEach(p => {
           subRowsHtml += `<tr class="sub-product-row enhanced-sub-row" data-parent-shipment="${s.id}">
             <td class="sub-product-indent">
@@ -587,6 +592,9 @@ async function loadShipments(searchTerm = '', filters = {}) {
           </tr>`;
         });
       }
+    } else if (s.product_name) {
+      productCellHtml = `${s.product_name} <span class="product-badge" title="1 item">1</span>`;
+      varietyCellHtml = s.variety_name || 'N/A';
     }
     
     const supplierName = s.supplier_name || 'N/A';
@@ -605,20 +613,33 @@ async function loadShipments(searchTerm = '', filters = {}) {
     ];
     
     // Generate overall progress bar
-    const totalCount = s.total_milestones_count || 24;
+    const totalCount = s.total_milestones_count || 23;
     const completedCount = s.completed_milestones_count || 0;
     const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
     
-    // Auto-complete shipment if progress is 100% and status is not yet completed (and not cancelled)
-    if (progressPercent === 100 && s.status !== 'completed' && s.status !== 'cancelled') {
+    // Auto-status logic:
+    // 1. If 100% completed (all stages including bills are completed) -> 'completed'
+    // 2. If all stages except 'bills' are completed (progressPercent < 100 && (completedCount >= totalCount - 1 || s.current_stage === 'bills')) -> 'pending'
+    if (s.status !== 'cancelled' && s.status !== 'on_hold') {
+      if (progressPercent === 100 && s.status !== 'completed') {
         supabase.from('shipment')
-            .update({ status: 'completed' })
-            .eq('id', s.id)
-            .then(({ error }) => {
-                if (error) console.error('Failed to auto-complete shipment:', error);
-                else console.log(`Shipment ${s.reference_code} automatically marked as completed.`);
-            });
+          .update({ status: 'completed' })
+          .eq('id', s.id)
+          .then(({ error }) => {
+            if (error) console.error('Failed to auto-complete shipment:', error);
+            else console.log(`Shipment ${s.reference_code} automatically marked as completed.`);
+          });
         s.status = 'completed'; // Update local status for instant UI sync
+      } else if (progressPercent < 100 && (completedCount >= totalCount - 1 || s.current_stage === 'bills') && s.status !== 'pending') {
+        supabase.from('shipment')
+          .update({ status: 'pending' })
+          .eq('id', s.id)
+          .then(({ error }) => {
+            if (error) console.error('Failed to mark shipment as pending:', error);
+            else console.log(`Shipment ${s.reference_code} automatically marked as pending.`);
+          });
+        s.status = 'pending'; // Update local status for instant UI sync
+      }
     }
     const progressBarHtml = `
       <div class="progress-bar-container" style="width: 100%; max-width: 150px;">
@@ -1155,7 +1176,7 @@ function addProductForm() {
       </div>
     </div>
     <div>
-      <label>Product Variety:</label>
+      <label>Product or Variety:</label>
       <select name="product_variety_id" required disabled>
         <option value="">Select a commodity first</option>
       </select>

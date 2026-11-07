@@ -5,9 +5,10 @@
 
 DECLARE
   v_from_stage public.stage;
+  v_current_status public.status;
 BEGIN
   -- Lock the shipment row to prevent race conditions
-  SELECT current_stage INTO v_from_stage
+  SELECT current_stage, status INTO v_from_stage, v_current_status
   FROM public.shipment
   WHERE id = p_shipment_id
   FOR UPDATE;
@@ -25,9 +26,13 @@ BEGIN
     RAISE EXCEPTION 'Requirements not met for stage %', p_to_stage;
   END IF;
 
-  -- Update the shipment stage
+  -- Update the shipment stage and auto-mark pending if entering bills
   UPDATE public.shipment
-  SET current_stage = p_to_stage
+  SET current_stage = p_to_stage,
+      status = CASE
+        WHEN p_to_stage = 'bills' AND v_current_status NOT IN ('completed', 'cancelled') THEN 'pending'::public.status
+        ELSE status
+      END
   WHERE id = p_shipment_id;
 
   -- Insert a record into the audit log
