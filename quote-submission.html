@@ -556,9 +556,11 @@
                 <div>
                   <p><strong>Type:</strong><br><span style="color: ${freightData.type ? '#16A34A' : '#64748B'};">${freightData.type || 'Pending'}</span></p>
                   ${freightData.type === 'Cartons' ? `
-                    <p><strong>Number of Cartons:</strong><br><span style="color: ${freightData.no_of_cartoons ? '#16A34A' : '#64748B'};">${freightData.no_of_cartoons || 'Pending'}</span></p>
-                    <p><strong>Dimension:</strong><br><span style="color: ${freightData.dimension ? '#16A34A' : '#64748B'};">${freightData.dimension ? (freightData.dimension.toLowerCase().includes('cm') ? freightData.dimension : freightData.dimension + ' cm') : 'Pending'}</span></p>
-                    <p><strong>Approx CBM:</strong><br><span style="color: ${freightData.approx_cbm ? '#16A34A' : '#64748B'};">${freightData.approx_cbm || 'Pending'}</span></p>
+                    <p><strong>Total Cartons:</strong><br><span style="color: ${freightData.no_of_cartoons ? '#16A34A' : '#64748B'};">${freightData.no_of_cartoons || 'Pending'}</span></p>
+                    <p><strong>Total Approx CBM:</strong><br><span style="color: ${freightData.approx_cbm ? '#16A34A' : '#64748B'};">${freightData.approx_cbm ? freightData.approx_cbm + ' CBM' : 'Pending'}</span></p>
+                    ${(!freightData.dimensions || freightData.dimensions.length <= 1) && freightData.dimension ? `
+                      <p><strong>Dimension:</strong><br><span style="color: #16A34A;">${freightData.dimension.toLowerCase().includes('cm') ? freightData.dimension : freightData.dimension + ' cm'}</span></p>
+                    ` : ''}
                   ` : freightData.type === 'Containers' ? `
                     <p><strong>No of Containers:</strong><br><span style="color: ${freightData.no_of_containers ? '#16A34A' : '#64748B'};">${freightData.no_of_containers || 'Pending'}</span></p>
                     <p><strong>Container Size:</strong><br><span style="color: ${freightData.container_size ? '#16A34A' : '#64748B'};">${freightData.container_size || 'Pending'}</span></p>
@@ -568,7 +570,44 @@
                     <p><strong>Number of Cartons:</strong><br><span style="color: ${freightData.no_of_cartoons ? '#16A34A' : '#64748B'};">${freightData.no_of_cartoons || 'Pending'}</span></p>
                   `}
                 </div>
-                </div>              ${products ? `
+                </div>
+                ${(freightData.dimensions && Array.isArray(freightData.dimensions) && freightData.dimensions.length > 0) ? `
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(124, 58, 237, 0.1);">
+                  <p style="margin-bottom: 8px;"><strong><i class="fas fa-boxes-stacked" style="color: #7C3AED; margin-right: 6px;"></i>Package & Dimension Breakdown:</strong></p>
+                  <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; background: rgba(255, 255, 255, 0.85); border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+                      <thead>
+                        <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; text-align: left; font-size: 0.8rem; text-transform: uppercase;">
+                          <th style="padding: 8px 12px; width: 36px;">#</th>
+                          <th style="padding: 8px 12px;">Dimensions (L × W × H)</th>
+                          <th style="padding: 8px 12px;">Cartons</th>
+                          <th style="padding: 8px 12px;">Volume (CBM)</th>
+                          ${(shipmentData?.mode_of_transport && shipmentData.mode_of_transport.toLowerCase().includes('air')) ? '<th style="padding: 8px 12px;">Volumetric Wt (kg)</th>' : ''}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${freightData.dimensions.map((d, i) => `
+                          <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px 12px; font-weight: 600; color: #64748b;">${i + 1}</td>
+                            <td style="padding: 8px 12px; font-weight: 600; color: #0f172a;">${d.length} × ${d.width} × ${d.height} cm</td>
+                            <td style="padding: 8px 12px;">${d.cartons} Cartons</td>
+                            <td style="padding: 8px 12px; font-family: monospace;">${parseFloat(d.cbm || 0).toFixed(4)} CBM</td>
+                            ${(shipmentData?.mode_of_transport && shipmentData.mode_of_transport.toLowerCase().includes('air')) ? `<td style="padding: 8px 12px; font-family: monospace;">${parseFloat(d.volumetric_weight || ((d.length * d.width * d.height / 6000) * d.cartons)).toFixed(2)} kg</td>` : ''}
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                      <tfoot>
+                        <tr style="background: #f1f5f9; font-weight: 700; border-top: 1px solid #cbd5e1;">
+                          <td colspan="2" style="padding: 8px 12px; text-align: right; color: #475569;">Totals:</td>
+                          <td style="padding: 8px 12px; color: #0f172a;">${freightData.dimensions.reduce((acc, d) => acc + (parseInt(d.cartons) || 0), 0)} Cartons</td>
+                          <td style="padding: 8px 12px; font-family: monospace; color: #0f172a;">${freightData.dimensions.reduce((acc, d) => acc + (parseFloat(d.cbm) || 0), 0).toFixed(4)} CBM</td>
+                          ${(shipmentData?.mode_of_transport && shipmentData.mode_of_transport.toLowerCase().includes('air')) ? `<td style="padding: 8px 12px; font-family: monospace; color: #0f172a;">${freightData.dimensions.reduce((acc, d) => acc + (parseFloat(d.volumetric_weight || ((d.length * d.width * d.height / 6000) * d.cartons)) || 0), 0).toFixed(2)} kg</td>` : ''}
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+                ` : ''}              ${products ? `
                 <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(124, 58, 237, 0.1);">
                   <p><strong>Products:</strong></p>
                   <div style="background: rgba(255, 255, 255, 0.7); padding: 10px; border-radius: 8px; margin-top: 5px; white-space: pre-line; font-size: 0.9rem; color: #64748B;">

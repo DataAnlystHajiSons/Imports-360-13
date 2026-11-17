@@ -459,6 +459,12 @@
               </div>
             </div>
             <div class="summary-item">
+              <h3>Cargo & Package Details</h3>
+              <div id="summary-cargo">
+                <p>No cargo details entered.</p>
+              </div>
+            </div>
+            <div class="summary-item">
               <h3>Selected Companies</h3>
               <div id="summary-companies">
                 <p>No companies selected.</p>
@@ -770,11 +776,12 @@
                 if (ssd.net_weight && document.getElementById('cargo-net-weight')) {
                     document.getElementById('cargo-net-weight').value = ssd.net_weight;
                 }
-                if (ssd.length && ssd.width && ssd.height && document.getElementById('cargo-dimension')) {
-                    const dimInput = document.getElementById('cargo-dimension');
-                    dimInput.value = `${ssd.length}x${ssd.width}x${ssd.height}`;
-                    // Trigger event so chargeable weight calculates automatically
-                    dimInput.dispatchEvent(new Event('input'));
+                if (ssd.length && ssd.width && ssd.height) {
+                    const tbody = document.getElementById('dimensions-table-body');
+                    if (tbody) {
+                        tbody.innerHTML = '';
+                        addDimensionRow(ssd.length, ssd.width, ssd.height, ssd.cartons_count || 1);
+                    }
                 }
                 // Handle total containers if type is containers
                 if (ssd.container_type && document.getElementById('cargo-type').value === 'Containers' && document.getElementById('cargo-container-size')) {
@@ -835,6 +842,30 @@
         companySummaryDiv.innerHTML = '<p>No companies selected.</p>';
     }
 
+    const cargoSummaryDiv = document.getElementById('summary-cargo');
+    if (cargoSummaryDiv) {
+      const type = document.getElementById('cargo-type')?.value;
+      const dims = typeof getDimensionsData === 'function' ? getDimensionsData() : [];
+      const cbm = document.getElementById('cargo-cbm')?.value;
+      const gross = document.getElementById('cargo-gross-weight')?.value;
+      const net = document.getElementById('cargo-net-weight')?.value;
+      const chargeable = document.getElementById('cargo-chargeable-weight')?.value;
+
+      let cargoHtml = `<p><strong>Cargo Type:</strong> ${type || 'Cartons'}</p>`;
+      if (gross) cargoHtml += `<p><strong>Gross Weight:</strong> ${gross} kg · <strong>Net Weight:</strong> ${net || 'N/A'} kg</p>`;
+      if (cbm) cargoHtml += `<p><strong>Total Approx Volume:</strong> ${cbm} CBM</p>`;
+      if (chargeable && currentModeOfTransport !== 'sea') cargoHtml += `<p><strong>Chargeable Weight:</strong> ${chargeable} kg</p>`;
+
+      if (dims && dims.length > 0) {
+        cargoHtml += `<div style="margin-top: 6px;"><strong>Package Breakdown (${dims.length} line${dims.length > 1 ? 's' : ''}):</strong><ul style="padding-left: 20px; margin: 4px 0 0 0; font-size: 13px; color: #475569;">`;
+        dims.forEach((d, idx) => {
+          cargoHtml += `<li>Line ${idx + 1}: ${d.cartons} Cartons @ ${d.length}×${d.width}×${d.height} cm (${d.cbm} CBM)</li>`;
+        });
+        cargoHtml += `</ul></div>`;
+      }
+      cargoSummaryDiv.innerHTML = cargoHtml;
+    }
+
     document.getElementById('send-queries-btn').disabled = !selectedShipmentId || selectedCompanyIds.size === 0;
   }
 
@@ -847,8 +878,8 @@
       html = `
         <div class="form-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
           <div class="form-group" style="display: flex; flex-direction: column;">
-            <label style="font-weight: 600; margin-bottom: 8px;">Number of Cartons <span style="color: #DC2626;">*</span></label>
-            <input type="number" id="cargo-no-of-cartoons" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
+            <label style="font-weight: 600; margin-bottom: 8px;">Total Number of Cartons <span style="color: #DC2626;">*</span></label>
+            <input type="number" id="cargo-no-of-cartoons" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc;" readonly placeholder="Auto-calculated from lines" required>
           </div>
           <div class="form-group" style="display: flex; flex-direction: column;">
             <label style="font-weight: 600; margin-bottom: 8px;">Net Weight (kg) <span style="color: #DC2626;">*</span></label>
@@ -859,16 +890,59 @@
             <input type="number" id="cargo-gross-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
           </div>
           <div class="form-group" style="display: flex; flex-direction: column;">
-            <label style="font-weight: 600; margin-bottom: 8px;">Dimension (cm) <span style="color: #DC2626;">*</span></label>
-            <input type="text" id="cargo-dimension" placeholder="e.g. 10x20x30" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;" required>
-          </div>
-          <div class="form-group" style="display: flex; flex-direction: column;">
-            <label style="font-weight: 600; margin-bottom: 8px;">Approx CBM <span style="color: #DC2626;">*</span></label>
-            <input type="number" id="cargo-cbm" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; ${typeof currentModeOfTransport !== 'undefined' && currentModeOfTransport === 'sea' ? 'background-color: #f1f5f9;' : ''}" ${typeof currentModeOfTransport !== 'undefined' && currentModeOfTransport === 'sea' ? 'readonly placeholder="Auto-calculated"' : 'required'}>
+            <label style="font-weight: 600; margin-bottom: 8px;">Total Approx CBM <span style="color: #DC2626;">*</span></label>
+            <input type="number" id="cargo-cbm" step="0.0001" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc;" readonly placeholder="Auto-calculated from lines" required>
           </div>
           <div class="form-group" style="display: ${currentModeOfTransport === 'sea' ? 'none' : 'flex'}; flex-direction: column;">
             <label style="font-weight: 600; margin-bottom: 8px;">Chargeable Wt (kg)</label>
-            <input type="number" id="cargo-chargeable-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f1f5f9;" readonly placeholder="Auto-calculated">
+            <input type="number" id="cargo-chargeable-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc;" readonly placeholder="Auto-calculated">
+          </div>
+        </div>
+
+        <!-- Multiple Dimensions Repeater -->
+        <div class="dimensions-repeater-card" style="margin-top: 24px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <div>
+              <h4 style="font-size: 14px; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-boxes-stacked" style="color: #6366f1;"></i>
+                Package Dimensions Breakdown
+              </h4>
+              <p style="font-size: 12px; color: #64748b; margin: 3px 0 0 0;">
+                Add one or multiple package dimensions. Total cartons, CBM, and chargeable weight update automatically.
+              </p>
+            </div>
+            <button type="button" id="btn-add-dimension" class="button-secondary" style="padding: 6px 14px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fas fa-plus"></i> Add Dimension Line
+            </button>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;" id="dimensions-table">
+              <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0; background: #f8fafc; text-align: left; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">
+                  <th style="padding: 8px 10px; width: 36px;">#</th>
+                  <th style="padding: 8px 10px;">Length (cm) <span style="color: #dc2626;">*</span></th>
+                  <th style="padding: 8px 10px;">Width (cm) <span style="color: #dc2626;">*</span></th>
+                  <th style="padding: 8px 10px;">Height (cm) <span style="color: #dc2626;">*</span></th>
+                  <th style="padding: 8px 10px;">Cartons <span style="color: #dc2626;">*</span></th>
+                  <th style="padding: 8px 10px;">Line CBM</th>
+                  <th style="padding: 8px 10px; display: ${currentModeOfTransport === 'sea' ? 'none' : 'table-cell'};">Vol. Wt (kg)</th>
+                  <th style="padding: 8px 10px; text-align: center; width: 50px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="dimensions-table-body">
+                <!-- Dynamically populated rows -->
+              </tbody>
+              <tfoot>
+                <tr style="background: #f1f5f9; font-weight: 700; border-top: 2px solid #cbd5e1;">
+                  <td colspan="4" style="padding: 10px; text-align: right; color: #334155;">Totals:</td>
+                  <td id="dim-total-cartons" style="padding: 10px; color: #0f172a;">0 Cartons</td>
+                  <td id="dim-total-cbm" style="padding: 10px; font-family: monospace; color: #0f172a;">0.0000 CBM</td>
+                  <td id="dim-total-vol-wt" style="padding: 10px; font-family: monospace; color: #0f172a; display: ${currentModeOfTransport === 'sea' ? 'none' : 'table-cell'};">0.00 kg</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </div>
       `;
@@ -897,12 +971,8 @@
             <input type="number" id="cargo-gross-weight" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
           </div>
           <div class="form-group" style="display: flex; flex-direction: column;">
-            <label style="font-weight: 600; margin-bottom: 8px;">Dimension (cm) <span style="color: #94A3B8; font-weight: normal; font-size: 0.8rem;">(Optional)</span></label>
-            <input type="text" id="cargo-dimension" placeholder="e.g. 10x20x30" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
-          </div>
-          <div class="form-group" style="display: flex; flex-direction: column;">
             <label style="font-weight: 600; margin-bottom: 8px;">Approx CBM <span style="color: #94A3B8; font-weight: normal; font-size: 0.8rem;">(Optional)</span></label>
-            <input type="number" id="cargo-cbm" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; ${typeof currentModeOfTransport !== 'undefined' && currentModeOfTransport === 'sea' ? 'background-color: #f1f5f9;' : ''}" ${typeof currentModeOfTransport !== 'undefined' && currentModeOfTransport === 'sea' ? 'readonly placeholder="Auto-calculated"' : ''}>
+            <input type="number" id="cargo-cbm" step="0.01" style="padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
           </div>
           <div class="form-group" style="display: ${currentModeOfTransport === 'sea' ? 'none' : 'flex'}; flex-direction: column;">
             <label style="font-weight: 600; margin-bottom: 8px;">Chargeable Wt (kg)</label>
@@ -914,46 +984,159 @@
 
     dynamicContainer.innerHTML = html;
 
-    // Attach listeners for auto-calculation
-    const dimInput = document.getElementById('cargo-dimension');
-    const cartonsInput = document.getElementById('cargo-no-of-cartoons');
-    const chargeableInput = document.getElementById('cargo-chargeable-weight');
-
-    const cbmInput = document.getElementById('cargo-cbm');
-
-    function calculateChargeableWeight() {
-      if (!dimInput) return;
-      const dimStr = dimInput.value;
-      const cartons = cartonsInput ? (parseFloat(cartonsInput.value) || 1) : 1;
-      
-      // Look for LxWxH format
-      const match = dimStr.match(/([\d.]+)\s*[xX*]\s*([\d.]+)\s*[xX*]\s*([\d.]+)/);
-      if (match && cartons > 0) {
-        const l = parseFloat(match[1]);
-        const w = parseFloat(match[2]);
-        const h = parseFloat(match[3]);
-        if (l && w && h) {
-          if (currentModeOfTransport === 'sea') {
-              if (cbmInput) {
-                  const calculatedCBM = (l * w * h / 1000000) * cartons;
-                  cbmInput.value = calculatedCBM.toFixed(4);
-              }
-              if (chargeableInput) chargeableInput.value = '';
-          } else {
-              if (chargeableInput) {
-                  const volWeight = (l * w * h / 6000) * cartons;
-                  chargeableInput.value = volWeight.toFixed(2);
-              }
-          }
-          return;
-        }
+    // Attach listeners for Cartons dimensions repeater
+    if (type === 'Cartons') {
+      const addBtn = document.getElementById('btn-add-dimension');
+      if (addBtn) {
+        addBtn.addEventListener('click', () => addDimensionRow());
       }
-      if (chargeableInput) chargeableInput.value = '';
-      if (currentModeOfTransport === 'sea' && cbmInput) cbmInput.value = ''; 
+      // Initialize with at least 1 row
+      addDimensionRow();
+
+      const grossWeightInput = document.getElementById('cargo-gross-weight');
+      if (grossWeightInput) {
+        grossWeightInput.addEventListener('input', recalculateDimensions);
+      }
+    }
+  }
+
+  function addDimensionRow(l = '', w = '', h = '', cartons = '') {
+    const tbody = document.getElementById('dimensions-table-body');
+    if (!tbody) return;
+
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #f1f5f9';
+    tr.innerHTML = `
+      <td class="dim-index" style="padding: 8px 10px; font-weight: 600; color: #64748b;">${tbody.children.length + 1}</td>
+      <td style="padding: 6px 8px;">
+        <input type="number" class="dim-l" value="${l}" placeholder="L (cm)" min="0.1" step="0.1" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+      </td>
+      <td style="padding: 6px 8px;">
+        <input type="number" class="dim-w" value="${w}" placeholder="W (cm)" min="0.1" step="0.1" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+      </td>
+      <td style="padding: 6px 8px;">
+        <input type="number" class="dim-h" value="${h}" placeholder="H (cm)" min="0.1" step="0.1" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+      </td>
+      <td style="padding: 6px 8px;">
+        <input type="number" class="dim-qty" value="${cartons}" placeholder="Qty" min="1" step="1" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+      </td>
+      <td class="dim-cbm" style="padding: 8px 10px; font-family: monospace; font-weight: 600; color: #0f172a;">0.0000 CBM</td>
+      <td class="dim-vol-wt" style="padding: 8px 10px; font-family: monospace; font-weight: 600; color: #0f172a; display: ${currentModeOfTransport === 'sea' ? 'none' : 'table-cell'};">0.00 kg</td>
+      <td style="padding: 6px 8px; text-align: center;">
+        <button type="button" class="btn-remove-dim-row" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 6px; border-radius: 4px;" title="Remove row">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+
+    // Attach row calculation listeners
+    tr.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', recalculateDimensions);
+    });
+
+    tr.querySelector('.btn-remove-dim-row').addEventListener('click', () => {
+      if (tbody.children.length > 1) {
+        tr.remove();
+        recalculateDimensions();
+      } else {
+        tr.querySelectorAll('input').forEach(inp => inp.value = '');
+        recalculateDimensions();
+      }
+    });
+
+    recalculateDimensions();
+  }
+
+  function recalculateDimensions() {
+    const rows = document.querySelectorAll('#dimensions-table-body tr');
+    let totalCartons = 0;
+    let totalCbm = 0;
+    let totalVolWt = 0;
+
+    rows.forEach((row, idx) => {
+      const idxEl = row.querySelector('.dim-index');
+      if (idxEl) idxEl.textContent = idx + 1;
+
+      const l = parseFloat(row.querySelector('.dim-l')?.value) || 0;
+      const w = parseFloat(row.querySelector('.dim-w')?.value) || 0;
+      const h = parseFloat(row.querySelector('.dim-h')?.value) || 0;
+      const qty = parseInt(row.querySelector('.dim-qty')?.value) || 0;
+
+      let lineCbm = 0;
+      let lineVolWt = 0;
+
+      if (l > 0 && w > 0 && h > 0 && qty > 0) {
+        lineCbm = (l * w * h / 1000000) * qty;
+        lineVolWt = (l * w * h / 6000) * qty;
+      }
+
+      const cbmEl = row.querySelector('.dim-cbm');
+      if (cbmEl) cbmEl.textContent = lineCbm.toFixed(4) + ' CBM';
+
+      const volEl = row.querySelector('.dim-vol-wt');
+      if (volEl) volEl.textContent = lineVolWt.toFixed(2) + ' kg';
+
+      totalCartons += qty;
+      totalCbm += lineCbm;
+      totalVolWt += lineVolWt;
+    });
+
+    const totalCartonsEl = document.getElementById('dim-total-cartons');
+    if (totalCartonsEl) totalCartonsEl.textContent = totalCartons + ' Cartons';
+
+    const totalCbmEl = document.getElementById('dim-total-cbm');
+    if (totalCbmEl) totalCbmEl.textContent = totalCbm.toFixed(4) + ' CBM';
+
+    const totalVolEl = document.getElementById('dim-total-vol-wt');
+    if (totalVolEl) totalVolEl.textContent = totalVolWt.toFixed(2) + ' kg';
+
+    // Sync to form inputs
+    const cartonsInput = document.getElementById('cargo-no-of-cartoons');
+    if (cartonsInput) {
+      cartonsInput.value = totalCartons > 0 ? totalCartons : '';
     }
 
-    if (dimInput) dimInput.addEventListener('input', calculateChargeableWeight);
-    if (cartonsInput) cartonsInput.addEventListener('input', calculateChargeableWeight);
+    const cbmInput = document.getElementById('cargo-cbm');
+    if (cbmInput) {
+      cbmInput.value = totalCbm > 0 ? totalCbm.toFixed(4) : '';
+    }
+
+    const chargeableInput = document.getElementById('cargo-chargeable-weight');
+    if (chargeableInput) {
+      const grossWeight = parseFloat(document.getElementById('cargo-gross-weight')?.value) || 0;
+      if (currentModeOfTransport === 'sea') {
+        chargeableInput.value = '';
+      } else {
+        const chargeable = Math.max(grossWeight, totalVolWt);
+        chargeableInput.value = chargeable > 0 ? chargeable.toFixed(2) : '';
+      }
+    }
+  }
+
+  function getDimensionsData() {
+    const rows = document.querySelectorAll('#dimensions-table-body tr');
+    const result = [];
+    rows.forEach(row => {
+      const l = parseFloat(row.querySelector('.dim-l')?.value) || 0;
+      const w = parseFloat(row.querySelector('.dim-w')?.value) || 0;
+      const h = parseFloat(row.querySelector('.dim-h')?.value) || 0;
+      const qty = parseInt(row.querySelector('.dim-qty')?.value) || 0;
+      if (l > 0 && w > 0 && h > 0 && qty > 0) {
+        const cbm = (l * w * h / 1000000) * qty;
+        const volWt = (l * w * h / 6000) * qty;
+        result.push({
+          length: l,
+          width: w,
+          height: h,
+          cartons: qty,
+          cbm: parseFloat(cbm.toFixed(4)),
+          volumetric_weight: parseFloat(volWt.toFixed(2))
+        });
+      }
+    });
+    return result;
   }
 
   function validateCargoStep() {
@@ -974,10 +1157,11 @@
         const noOfCartoons = document.getElementById('cargo-no-of-cartoons').value;
         const netWeight = document.getElementById('cargo-net-weight').value;
         const grossWeight = document.getElementById('cargo-gross-weight').value;
-        const dimension = document.getElementById('cargo-dimension').value;
         const cbm = document.getElementById('cargo-cbm').value;
-        if (!noOfCartoons || !netWeight || !grossWeight || !dimension || !cbm) {
-            showMessage('Number of Cartons, Net Weight, Gross Weight, Dimension, and Approx CBM are required for Cartons.', true);
+        const dims = getDimensionsData();
+
+        if (!noOfCartoons || !netWeight || !grossWeight || !cbm || dims.length === 0) {
+            showMessage('Net Weight, Gross Weight, and at least one valid Dimension line with Length, Width, Height, and Cartons are required.', true);
             return false;
         }
     } else if (type === 'Containers') {
@@ -1011,11 +1195,18 @@
     let noOfCartoons = document.getElementById('cargo-no-of-cartoons')?.value;
     let netWeight = document.getElementById('cargo-net-weight')?.value;
     let grossWeight = document.getElementById('cargo-gross-weight')?.value;
-    let dimension = document.getElementById('cargo-dimension')?.value;
     let cbm = document.getElementById('cargo-cbm')?.value;
     let noOfContainers = document.getElementById('cargo-no-of-containers')?.value;
     let containerSize = document.getElementById('cargo-container-size')?.value;
     let chargeableWeight = document.getElementById('cargo-chargeable-weight')?.value;
+
+    const dimensionsArray = getDimensionsData();
+    let dimensionSummary = '';
+    if (dimensionsArray.length > 0) {
+      dimensionSummary = dimensionsArray.map(d => `${d.cartons}x (${d.length}x${d.width}x${d.height} cm)`).join(', ');
+    } else {
+      dimensionSummary = document.getElementById('cargo-dimension')?.value || '';
+    }
 
     try {
         const queriesToInsert = Array.from(selectedCompanyIds).map(companyId => ({
@@ -1028,10 +1219,11 @@
           origin: origin,
           readiness_date: readinessDate,
           pick_up_address: pickupAddress,
-          no_of_cartoons: noOfCartoons ? parseInt(noOfCartoons) : null,
+          no_of_cartoons: noOfCartoons ? parseInt(noOfCartoons) : (dimensionsArray.reduce((acc, d) => acc + d.cartons, 0) || null),
           net_weight: netWeight ? parseFloat(netWeight) : null,
           gross_weight: grossWeight ? parseFloat(grossWeight) : null,
-          dimension: dimension || null,
+          dimension: dimensionSummary || null,
+          dimensions: dimensionsArray.length > 0 ? dimensionsArray : null,
           approx_cbm: cbm ? parseFloat(cbm) : null,
           no_of_containers: noOfContainers ? parseInt(noOfContainers) : null,
           container_size: containerSize || null,
