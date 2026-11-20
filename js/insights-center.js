@@ -93,7 +93,7 @@ async function runShipmentDiagnostics() {
     document.getElementById('meta-product').textContent = productValue;
     document.getElementById('meta-variety').textContent = varietyValue;
     document.getElementById('meta-supplier').textContent = supplierValue;
-    document.getElementById('meta-progress').textContent = `${shipmentData.completed_milestones_count || 0}/${shipmentData.total_milestones_count || 23} milestones completed (${Math.round(((shipmentData.completed_milestones_count || 0) / (shipmentData.total_milestones_count || 23)) * 100)}%)`;
+    document.getElementById('meta-progress').textContent = `${shipmentData.completed_milestones_count || 0}/${shipmentData.total_milestones_count || 24} milestones completed (${Math.round(((shipmentData.completed_milestones_count || 0) / (shipmentData.total_milestones_count || 24)) * 100)}%)`;
 
     // 2. Query target duration for current stage from database
     const { data: stageConfigs } = await supabase.from('stage_details').select('*');

@@ -973,7 +973,29 @@
             circularProgress.appendChild(stageNode);
         });
 
-        updateStatistics(currentStageIndex);
+        updateStatistics(completedCount, totalStages);
+
+        // Auto-status logic aligned with wheel completion:
+        if (data.status !== 'cancelled' && data.status !== 'on_hold') {
+            const isBillsCostingDone = costingData && costingData.final_payment && (parseFloat(costingData.per_unit_rate) > 0 || costingData.total_cost);
+            const statusTextEl = document.getElementById('shipmentStatusText') || document.querySelector('.shipment-status');
+            const statusContainer = document.getElementById('shipmentStatusContainer') || document.querySelector('.shipment-status');
+            if (completedCount === totalStages && isBillsCostingDone && data.status !== 'completed') {
+                await supabase.from('shipment').update({ status: 'completed' }).eq('id', shipmentId);
+                data.status = 'completed';
+                if (statusTextEl) statusTextEl.textContent = 'COMPLETED';
+                if (statusContainer) {
+                    statusContainer.className = 'shipment-status status-completed';
+                }
+            } else if (completedCount < totalStages && (completedCount >= totalStages - 1 || currentStageIndex === billsIndex) && data.status !== 'pending') {
+                await supabase.from('shipment').update({ status: 'pending' }).eq('id', shipmentId);
+                data.status = 'pending';
+                if (statusTextEl) statusTextEl.textContent = 'PENDING';
+                if (statusContainer) {
+                    statusContainer.className = 'shipment-status status-pending';
+                }
+            }
+        }
         
         // Initialize Stage Target Dates Manager
         window.stageTargetDatesManager = new StageTargetDates(supabase, shipmentId);
@@ -1208,16 +1230,28 @@
         }
     }
 
-    function updateStatistics(currentStageIndex) {
-        const completedCount = currentStageIndex;
-        const totalStages = activeStageOrder.length;
-        const progressPercent = Math.round((completedCount / totalStages) * 100);
-        const remainingCount = totalStages - completedCount;
+    function updateStatistics(completedCount, totalStages) {
+        totalStages = totalStages || activeStageOrder.length;
+        if (completedCount === undefined || completedCount === null) {
+            completedCount = activeStageOrder.indexOf(currentStageData.current_stage || '');
+            if (completedCount === -1) completedCount = 0;
+        }
+        const progressPercent = totalStages > 0 ? Math.round((completedCount / totalStages) * 100) : 0;
+        const remainingCount = Math.max(0, totalStages - completedCount);
 
-        document.getElementById('completedCount').textContent = completedCount;
-        document.getElementById('progressPercent').textContent = progressPercent + '%';
-        document.getElementById('remainingCount').textContent = remainingCount;
-        document.getElementById('overallProgress').style.width = progressPercent + '%';
+        const completedEl = document.getElementById('completedCount');
+        if (completedEl) completedEl.textContent = completedCount;
+        
+        const progressEl = document.getElementById('progressPercent');
+        if (progressEl) progressEl.textContent = progressPercent + '%';
+        
+        const remainingEl = document.getElementById('remainingCount');
+        if (remainingEl) remainingEl.textContent = remainingCount;
+        
+        const overallBar = document.getElementById('overallProgress');
+        if (overallBar) overallBar.style.width = progressPercent + '%';
+
+        console.log(`📊 Wheel Statistics: Done=${completedCount}, Progress=${progressPercent}%, Left=${remainingCount}`);
     }
 
     async function populateTimeline(currentStageIndex) {

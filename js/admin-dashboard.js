@@ -637,7 +637,7 @@ async function loadShipments(searchTerm = '', filters = {}) {
     ];
     
     // Generate overall progress bar
-    const totalCount = s.total_milestones_count || 23;
+    const totalCount = s.total_milestones_count || 24;
     const completedCount = s.completed_milestones_count || 0;
     const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
     
