@@ -482,11 +482,18 @@ function calculateSearchRelevance(shipment, rawQuery) {
   return 100;
 }
 
+const fileStartDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'Asia/Karachi'
+});
+
 async function loadShipments(searchTerm = '', filters = {}) {
   // Show loading state
   showTableLoading(true);
   
-  const { data, error } = await supabase.rpc('filter_shipments', {
+  const query = supabase.rpc('filter_shipments', {
     p_search_term: searchTerm,
     p_supplier_id: filters.supplier_id,
     p_clearing_agent_id: filters.clearing_agent_id,
@@ -498,6 +505,10 @@ async function loadShipments(searchTerm = '', filters = {}) {
     p_variety_name: filters.variety_name,
     p_mode_of_transport: filters.mode_of_transport
   });
+  if (filters.shipment_type) {
+    query.ilike('reference_code', `${filters.shipment_type}%`);
+  }
+  const { data, error } = await query;
 
   // Hide loading state
   showTableLoading(false);
@@ -505,7 +516,7 @@ async function loadShipments(searchTerm = '', filters = {}) {
   if (error) {
     document.getElementById("shipments-table-body").innerHTML = `
       <tr class="error-row">
-        <td colspan="10" style="text-align: center; padding: 40px; color: var(--error-color);">
+        <td colspan="11" style="text-align: center; padding: 40px; color: var(--error-color);">
           <div class="error-content">
             <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
             <strong>Error loading shipments</strong><br>
@@ -520,7 +531,7 @@ async function loadShipments(searchTerm = '', filters = {}) {
   if (!data || data.length === 0) {
     tableBody.innerHTML = `
       <tr class="empty-row">
-        <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-secondary-color);">
+        <td colspan="11" style="text-align: center; padding: 40px; color: var(--text-secondary-color);">
           <div class="empty-content">
             <i class="fas fa-ship" style="font-size: 32px; margin-bottom: 15px; display: block; opacity: 0.5;"></i>
             <strong style="display: block; margin-bottom: 5px;">No shipments found</strong>
@@ -592,6 +603,7 @@ async function loadShipments(searchTerm = '', filters = {}) {
                 <span class="sub-product-arrow">&#8627;</span>
               </div>
             </td>
+            <td></td>
             <td class="sub-product-cell">
               <div class="cell-content">
                 <span class="sub-product-name">${p.product_name}</span>
@@ -677,6 +689,8 @@ async function loadShipments(searchTerm = '', filters = {}) {
       </div>
     `;
 
+    const createdAt = Date.parse(s.created_at);
+    const fileStartDate = Number.isFinite(createdAt) ? fileStartDateFormatter.format(createdAt) : '—';
     html += `<tr class="enhanced-row" data-shipment-id="${s.id}" data-status="${s.status}">
       <td class="reference-cell">
         <div class="cell-content">
@@ -686,6 +700,7 @@ async function loadShipments(searchTerm = '', filters = {}) {
           </a>
         </div>
       </td>
+      <td>${fileStartDate}</td>
       <td class="product-cell enhanced-product-cell">
         <div class="cell-content">
           ${productCellHtml}
@@ -1470,6 +1485,7 @@ window.onload = async () => {
             status: document.getElementById('status-filter').value || null,
             commodity: document.getElementById('commodity-filter').value || null,
             mode_of_transport: document.getElementById('mode-of-transport-filter').value || null,
+            shipment_type: document.getElementById('shipment-type-filter').value,
             lc_number: document.getElementById('lc-number-filter').value || null,
             product_name: document.getElementById('product-name-filter').value || null,
             variety_name: document.getElementById('variety-name-filter').value || null
@@ -1485,6 +1501,7 @@ window.onload = async () => {
         document.getElementById('status-filter').value = '';
         document.getElementById('commodity-filter').value = '';
         document.getElementById('mode-of-transport-filter').value = '';
+        document.getElementById('shipment-type-filter').value = '';
         document.getElementById('lc-number-filter').value = '';
         document.getElementById('product-name-filter').value = '';
         document.getElementById('variety-name-filter').value = '';
@@ -1500,6 +1517,7 @@ window.onload = async () => {
           status: document.getElementById('status-filter').value,
           commodity: document.getElementById('commodity-filter').value,
           mode_of_transport: document.getElementById('mode-of-transport-filter').value,
+          shipment_type: document.getElementById('shipment-type-filter').value,
           lc_number: document.getElementById('lc-number-filter').value,
           product_name: document.getElementById('product-name-filter').value,
           variety_name: document.getElementById('variety-name-filter').value
@@ -1530,6 +1548,7 @@ window.onload = async () => {
             status: document.getElementById('status-filter').value || null,
             commodity: document.getElementById('commodity-filter').value || null,
             mode_of_transport: document.getElementById('mode-of-transport-filter')?.value || null,
+            shipment_type: document.getElementById('shipment-type-filter').value,
             lc_number: document.getElementById('lc-number-filter').value || null,
             product_name: document.getElementById('product-name-filter').value || null,
             variety_name: document.getElementById('variety-name-filter').value || null

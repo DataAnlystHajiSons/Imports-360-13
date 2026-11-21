@@ -362,6 +362,14 @@
           </select>
         </div>
         <div class="filter-group">
+          <label for="shipment-type-filter">Shipment Type</label>
+          <select id="shipment-type-filter">
+            <option value="">All shipment types</option>
+            <option value="L">LC</option>
+            <option value="D">Direct</option>
+          </select>
+        </div>
+        <div class="filter-group">
           <label for="lc-number-filter">LC Number</label>
           <input type="text" id="lc-number-filter" placeholder="Enter LC Number">
         </div>
@@ -390,6 +398,7 @@
                       <i class="fas fa-sort sort-icon"></i>
                     </div>
                   </th>
+                  <th scope="col">File Start Date</th>
                   <th class="sortable" data-sort="product">
                     <div class="th-content">
                       <span>Product</span>
@@ -669,6 +678,6 @@
     </form>
   </div>
 </div>
-<script type="module" src="js/admin-dashboard.js?v=2.9"></script>
+<script type="module" src="js/admin-dashboard.js?v=2.10"></script>
 </body>
 </html>
